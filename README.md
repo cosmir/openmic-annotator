@@ -10,7 +10,7 @@ This is the source repository for the Bedevere initiative, a community-driven ap
 
 ## Relevant Links
 
-- B. McFee, E. J. Humphrey, and J. Urbano. [A Plan for Sustainable MIR Evaluation](https://wp.nyu.edu/ismir2016/wp-content/uploads/sites/2294/2016/07/257_Paper.pdf) ISMIR 2016. [[slides]()]
+- B. McFee, E. J. Humphrey, and J. Urbano. [A Plan for Sustainable MIR Evaluation](https://wp.nyu.edu/ismir2016/wp-content/uploads/sites/2294/2016/07/257_Paper.pdf) ISMIR 2016. [[slides](http://bmcfee.github.io/slides/ismir2016_eval.pdf)]
 - [Developer mailing list](https://groups.google.com/forum/#!forum/bedevere-dev)
 - [Users mailing list](https://groups.google.com/forum/#!forum/bedevere-users)
 

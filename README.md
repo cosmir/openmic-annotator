@@ -16,7 +16,7 @@ This is the source repository for the Bedevere initiative, a community-driven ap
 
 ## What is "Bedevere"?
 
-![alt tag](https://i.ytimg.com/vi/X2xlQaimsGg/maxresdefault.jpg | width=800)
+![](https://i.ytimg.com/vi/X2xlQaimsGg/maxresdefault.jpg)
 
 Bedevere, an alternative spelling of [Sir Bedivere](https://en.wikipedia.org/wiki/Bedivere), is the name of the character in Monty Python's [Monty Python and the Holy Grail](https://en.wikipedia.org/wiki/Monty_Python_and_the_Holy_Grail#Plot), who devises a logical test to determine whether or not a woman, brought forward by an angry mob, is in fact a witch.
 

@@ -68,7 +68,7 @@ def hello():
 @app.route('/audio/upload', methods=['POST'])
 def audio_upload():
     """
-    To POST data to this endpoint:
+    To POST files to this endpoint:
 
     $ curl -F "audio=@some_file.mp3" localhost:8080/audio/upload
 
@@ -86,7 +86,23 @@ def audio_upload():
 
 @app.route('/annotation/submit', methods=['POST'])
 def annotation_submit():
-    return None
+    """
+    To POST data to this endpoint:
+
+    $ curl -H "Content-type: application/json" \
+        -X POST localhost:8080/annotation/submit \
+        -d '{"message":"Hello Data"}'
+    """
+    response = dict(message='nothing happened', status=400)
+    conds = [request.method == 'POST',
+             request.headers['Content-Type'] == 'application/json']
+    if all(conds):
+        print(request.json)
+        # obj = json.loads(request.data)
+        response['message'] = ("Received JSON data! {}".format(request.json))
+        response['status'] = 200
+
+    return json.dumps(response)
 
 
 @app.route('/annotation/taxonomy', methods=['GET'])

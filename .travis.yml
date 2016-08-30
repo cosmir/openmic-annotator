@@ -19,7 +19,7 @@ install:
     - pip install -t lib -r requirements/setup/requirements_dev.txt
 
 script:
-    - py.test backend_server/test_main.py
+    - py.test -vs backend_server/test_main.py
 
 after_success:
     - coveralls

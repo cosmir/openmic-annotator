@@ -20,12 +20,12 @@ def test_audio_upload(app):
 
 
 @pytest.mark.skipif(True, reason="writeme")
-def test_audio_upload(app):
+def test_annotation_submit(app):
     r = app.get('/annotation/submit')
     assert r.status_code == 200
 
 
 @pytest.mark.skipif(True, reason="writeme")
-def test_audio_upload(app):
+def test_annotation_taxonomy(app):
     r = app.get('/annotation/taxonomy')
     assert r.status_code == 200

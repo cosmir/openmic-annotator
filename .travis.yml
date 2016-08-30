@@ -16,7 +16,7 @@ python:
 
 install:
     - pip install coveralls
-    - pip install -t lib -r requirements/setup/requirements_dev.txt
+    - pip install -t backend_server/lib -r backend_server/requirements/setup/requirements_dev.txt
 
 script:
     - py.test -vs backend_server/test_main.py

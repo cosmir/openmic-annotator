@@ -16,7 +16,7 @@ repository root:
 At this point, the endpoints should be live via localhost:
 
   $ curl -X GET localhost:8080/annotation/taxonomy
-  $ curl -F "audio=@wtf.mp3" localhost:8080/audio/upload
+  $ curl -F "audio=@some_file.mp3" localhost:8080/audio/upload
 
 
 Deploying to App Engine
@@ -40,7 +40,7 @@ From here, the app should be deployed to the following URL:
 You can then poke the endpoints as one would expect:
 
   $ curl -X GET http://<PROJECT_ID>.appspot.com/annotation/taxonomy
-  $ curl -F "audio=@wtf.mp3" http://<PROJECT_ID>/audio/upload
+  $ curl -F "audio=@some_file.mp3" http://<PROJECT_ID>/audio/upload
 
 
 Shutting Down App Engine

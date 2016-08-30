@@ -22,5 +22,5 @@ Bedevere, an alternative spelling of [Sir Bedivere](https://en.wikipedia.org/wik
 
 Of course, and to great comic effect, there are a number of egregious errors made in the course of orchestrating the experiment, thus leading to an erroneous conclusion (that, yes, she is a witch)<sup>[1](#footnote)</sup>. However, the ironic lesson of the scene is that even community-led evaluation can be misguided (especially when you want a specific outcome), but doing so in the open increases the chances that any possible missteps might be identified and corrected.
 
-
+---
 <a name="footnote">1</a>: Obviously, the true algorithm for deciding if someone is a witch is simple (no), but [remains a serious problem](http://safechildafrica.org/) even today.

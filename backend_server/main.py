@@ -57,7 +57,7 @@ you've configured.
 
 import json
 import logging
-import urllib2
+import requests
 
 from flask import Flask, request
 
@@ -119,11 +119,10 @@ def annotation_taxonomy():
     """
     tax_url = ("https://raw.githubusercontent.com/marl/jams/master/jams/"
                "schemata/namespaces/tag/medleydb_instruments.json")
-    res = urllib2.urlopen(tax_url)
-    sdata = res.read()
-    tax = None
-    if sdata:
-        tax = json.loads(sdata)
+    res = requests.get(tax_url)
+    tax = {}
+    if res.text:
+        tax = json.loads(res.text)
 
     return json.dumps(tax)
 

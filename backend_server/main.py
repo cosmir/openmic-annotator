@@ -13,6 +13,11 @@ repository root:
   $ cd backend_server
   $ dev_appserver.py .
 
+At this point, the endpoints should be live via localhost:
+
+  $ curl -X GET localhost:8080/annotation/taxonomy
+  $ curl -F "audio=@wtf.mp3" localhost:8080/audio/upload
+
 
 Deploying to App Engine
 -----------------------

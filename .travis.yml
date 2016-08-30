@@ -1,0 +1,25 @@
+sudo: false
+
+cache:
+  directories:
+  - $HOME/env
+
+language: python
+
+notifications:
+  email: false
+
+python:
+    - "2.7"
+    - "3.4"
+    - "3.5"
+
+install:
+    - pip install coveralls
+    - pip install -t lib -r requirements/setup/requirements_dev.txt
+
+script:
+    - py.test backend_server/test_main.py
+
+after_success:
+    - coveralls

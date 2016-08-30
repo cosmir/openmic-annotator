@@ -1,6 +1,6 @@
 # Bedevere
 
-> There are ways of telling whether an algorithm is a witch. Or a horse.
+> There are ways of telling whether an algorithm is a horse.
 
 [![Build Status](https://travis-ci.org/omec/bedevere.svg?branch=master)](https://travis-ci.org/omec/bedevere)
 
@@ -18,6 +18,9 @@ This is the source repository for the Bedevere initiative, a community-driven ap
 
 ![](https://i.ytimg.com/vi/X2xlQaimsGg/maxresdefault.jpg)
 
-Bedevere, an alternative spelling of [Sir Bedivere](https://en.wikipedia.org/wiki/Bedivere), is the name of the character in Monty Python's [Monty Python and the Holy Grail](https://en.wikipedia.org/wiki/Monty_Python_and_the_Holy_Grail#Plot), who devises a logical test to determine whether or not a woman, brought forward by an angry mob, is in fact a witch.
+Bedevere, an alternative spelling of [Sir Bedivere](https://en.wikipedia.org/wiki/Bedivere), is the name of the character in Monty Python's [Monty Python and the Holy Grail](https://en.wikipedia.org/wiki/Monty_Python_and_the_Holy_Grail#Plot), who devises a test to determine whether or not a woman, brought forward by an angry mob, is in fact a witch.
 
-Of course, and to great comic effect, there are a number of egregious errors made in the course of orchestrating this experiment, thus leading to an erroneous conclusion (that, yes, she is a witch). However, the ironic lesson of the scene is that even community-led evaluation can be misguided (especially when you _really_ want a specific outcome), but doing so in the open increases the chances that any possible ... missteps ... might be identified and corrected.
+Of course, and to great comic effect, there are a number of egregious errors made in the course of orchestrating the experiment, thus leading to an erroneous conclusion (that, yes, she is a witch)<sup>[1](#footnote)</sup>. However, the ironic lesson of the scene is that even community-led evaluation can be misguided (especially when you want a specific outcome), but doing so in the open increases the chances that any possible missteps might be identified and corrected.
+
+
+<a name="footnote">1</a>: Obviously, the true algorithm for deciding if someone is a witch is simple (no), but [remains a serious problem](http://safechildafrica.org/) even today.

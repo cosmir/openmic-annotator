@@ -1,5 +1,10 @@
 sudo: false
 
+apt:
+  packages:
+  - libgflags-dev
+  - libgtest-dev
+
 cache:
   directories:
   - $HOME/env

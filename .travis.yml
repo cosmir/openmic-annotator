@@ -19,7 +19,7 @@ install:
     - pip install -t backend_server/lib -r backend_server/requirements/setup/requirements_dev.txt
 
 script:
-    - PYTHONPATH=backend_server/lib:$PYTHONPATH py.test -vs backend_server/test_main.py
+    - PYTHONPATH=backend_server:backend_server/lib:$PYTHONPATH py.test -vs backend_server/test_main.py
 
 after_success:
     - coveralls

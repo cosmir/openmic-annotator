@@ -15,16 +15,18 @@ notifications:
   email: false
 
 python:
-    - "2.7"
-    - "3.4"
-    - "3.5"
+  - "2.7"
+  - "3.4"
+  - "3.5"
 
 install:
-    - pip install coveralls
-    - pip install -t backend_server/lib -r backend_server/requirements/setup/requirements_dev.txt
+  - pip install --upgrade pip
+  - pip install --upgrade tox
+  - pip install coveralls
+  - pip install -t backend_server/lib -r backend_server/requirements/setup/requirements_dev.txt
 
 script:
-    - PYTHONPATH=backend_server:backend_server/lib:$PYTHONPATH py.test -vs backend_server/tests
+  - PYTHONPATH=backend_server:backend_server/lib:$PYTHONPATH py.test -vs backend_server/tests
 
 after_success:
-    - coveralls
+  - coveralls

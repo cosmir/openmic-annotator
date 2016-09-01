@@ -55,19 +55,25 @@ Be sure to replace <PROJECT_ID> with the appropriate one matching the account
 you've configured.
 """
 
+from flask import Flask, request
 import json
 import logging
 import requests
+import os
 
-from flask import Flask, request
+import pybackend.storage
+import pybackend.utils
+
 
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
+GCP_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
+app.config['gcp'] = json.load(open(GCP_CONFIG))
 
 
 @app.route('/')
 def hello():
-    return 'How do you know she is a witch?'
+    return 'oh hai'
 
 
 @app.route('/audio/upload', methods=['POST'])
@@ -77,13 +83,28 @@ def audio_upload():
 
     $ curl -F "audio=@some_file.mp3" localhost:8080/audio/upload
 
+    TODO: Define / adopt common response schema for endpoints.
     """
     response = dict(message='nothing happened', status=400)
     if request.method == 'POST':
-        afile = request.files['audio']
-        audio_bytes = afile.stream.read()
+        audio_data = request.files['audio']
+        bytestring = audio_data.stream.read()
+
+        # Copy to cloud storage
+        store = pybackend.storage.Storage(
+          name=app.config['gcp']['storage']['name'],
+          project_id=app.config['gcp']['project_id'],
+          testing=app.testing)
+
+        key = pybackend.utils.uuid(bytestring)
+        fext = os.path.splitext(audio_data.filename)[-1]
+        store.upload(bytestring, "{}{}".format(key, fext))
+
+        # Index in datastore
+        # Keep things like extension, storage platform, mimetype, etc.
+
         response['message'] = ("Received {} bytes of data."
-                               .format(len(audio_bytes)))
+                               .format(len(bytestring)))
         response['status'] = 200
 
     return json.dumps(response)
@@ -116,6 +137,9 @@ def annotation_taxonomy():
     To fetch data at this endpoint:
 
     $ curl -X GET localhost:8080/annotation/taxonomy
+
+    TODO: Clean this up per @alastair's feedback. Also warrants a response
+    schema, rather than just the serialized taxonomy.
     """
     tax_url = ("https://raw.githubusercontent.com/marl/jams/master/jams/"
                "schemata/namespaces/tag/medleydb_instruments.json")

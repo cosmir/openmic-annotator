@@ -1,6 +1,6 @@
 # Open-mic -- An open music informatics challenge
 
-[![Build Status](https://travis-ci.org/omec/open-mic.svg?branch=master)](https://travis-ci.org/omec/open-mic)
+[![Build Status](https://travis-ci.org/cosmir/open-mic.svg?branch=master)](https://travis-ci.org/cosmir/open-mic)
 
 ## What's going on here?
 

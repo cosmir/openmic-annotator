@@ -3,7 +3,7 @@ from uuid import UUID
 
 
 def uuid(data):
-    """Create a unique identifier for this entry.
+    """Create a unique (deterministic) identifier.
 
     Parameters
     ----------

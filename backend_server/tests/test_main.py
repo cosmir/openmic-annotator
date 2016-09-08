@@ -2,11 +2,15 @@ import pytest
 
 from io import BytesIO
 import json
+import os
 
 
 @pytest.fixture
 def app():
     import main
+    config = os.path.join(os.path.dirname(__file__), os.pardir,
+                          'local_config.json')
+    main.app.config['gcp'] = json.load(open(config, 'r'))
     main.app.testing = True
     return main.app.test_client()
 
@@ -25,7 +29,7 @@ def test_audio_upload(app):
 def test_annotation_submit(app):
     r = app.post('/annotation/submit',
                  data=json.dumps(dict(foo='bar')),
-                 content_type = 'application/json')
+                 content_type='application/json')
     assert r.status_code == 200
 
 

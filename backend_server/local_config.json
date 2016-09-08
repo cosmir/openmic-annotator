@@ -3,6 +3,6 @@
     "storage": {
         "name": "audio-data",
         "backend": "local",
-        "root_dir": "tmp"
+        "local_dir": "tmp"
     }
 }

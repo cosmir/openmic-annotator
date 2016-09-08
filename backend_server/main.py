@@ -92,8 +92,8 @@ def audio_upload():
 
         # Copy to cloud storage
         store = pybackend.storage.Storage(
-          project_id=app.config['gcp']['project_id'],
-          **app.config['gcp']['storage'])
+            project_id=app.config['gcp']['project_id'],
+            **app.config['gcp']['storage'])
 
         key = pybackend.utils.uuid(bytestring)
         fext = os.path.splitext(audio_data.filename)[-1]

@@ -30,20 +30,32 @@ def test_LocalBucket_blob(tmpdir):
 
 
 def test_LocalClient___init__(tmpdir):
-    pass
+    assert S.LocalClient('my-project', str(tmpdir))
 
 
 def test_LocalClient_get_bucket(tmpdir):
-    pass
+    client = S.LocalClient('my-project', str(tmpdir))
+    bucket = client.get_bucket('fluflu')
+    assert bucket
+    assert isinstance(bucket, S.LocalBucket)
 
 
 def test_Storage___init__(tmpdir):
-    pass
+    assert S.Storage('blah-blah', 'my-project', backend=S.GCLOUD)
+    with pytest.raises(ValueError):
+        S.Storage('blah-blah', 'my-project', backend=S.LOCAL)
+    assert S.Storage('blah-blah', 'my-project', backend=S.LOCAL,
+                     local_dir=str(tmpdir))
 
 
 def test_Storage_client(tmpdir):
-    pass
+    store = S.Storage('blah-blah-1234', 'my-project-2', backend=S.LOCAL,
+                      local_dir=str(tmpdir))
+    assert store.client
+    assert isinstance(store.client, S.LocalClient)
 
 
 def test_Storage_upload(tmpdir):
-    pass
+    store = S.Storage('blah-blah-5678', 'my-project-3', backend=S.LOCAL,
+                      local_dir=str(tmpdir))
+    store.upload("hello darkness my old friend", 'song')

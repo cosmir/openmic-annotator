@@ -46,11 +46,11 @@ class LocalBucket(LocalData):
 class LocalClient(object):
 
     def __init__(self, project_id, root_dir):
-        self.project_id
+        self.project_id = project_id
         self.root_dir = _makedirs(root_dir)
 
     def get_bucket(self, name):
-        return LocalBlob(name=name, root=self.root_dir)
+        return LocalBucket(name=name, root=self.root_dir)
 
 
 BACKENDS = {
@@ -96,6 +96,6 @@ class Storage(object):
         """
         logger.debug("Uploading to {}: {}".format(key, fdata))
         bucket = self.client.get_bucket(self.name)
-        blob = self.bucket.blob(key)
+        blob = bucket.blob(key)
         blob.upload_from_string(fdata, content_type="application/octet-stream")
         return

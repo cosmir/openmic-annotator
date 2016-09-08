@@ -54,7 +54,7 @@ all the things that say "Shutdown" for maximum certainty:
 Be sure to replace <PROJECT_ID> with the appropriate one matching the account
 you've configured.
 """
-
+import argparse
 from flask import Flask, request
 import json
 import logging
@@ -97,14 +97,15 @@ def audio_upload():
 
         key = pybackend.utils.uuid(bytestring)
         fext = os.path.splitext(audio_data.filename)[-1]
-        store.upload(bytestring, "{}{}".format(key, fext))
+        key = "{}{}".format(key, fext)
+        store.upload(bytestring, key)
 
         # Index in datastore
         # Keep things like extension, storage platform, mimetype, etc.
 
-        response['message'] = ("Received {} bytes of data."
-                               .format(len(bytestring)))
-        response['status'] = 200
+        response.update(
+            status=200, key=key,
+            message="Received {} bytes of data.".format(len(bytestring)))
 
     return json.dumps(response)
 
@@ -122,9 +123,10 @@ def annotation_submit():
     conds = [request.method == 'POST',
              request.headers['Content-Type'] == 'application/json']
     if all(conds):
-        print(request.json)
+        app.logger.info("Received Annotation:\n{}"
+                        .format(json.dumps(request.json, indent=2)))
         # obj = json.loads(request.data)
-        response['message'] = ("Received JSON data! {}".format(request.json))
+        response['message'] = "success"
         response['status'] = 200
 
     return json.dumps(response)
@@ -157,4 +159,19 @@ def server_error(e):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--local",
+        action='store_true', help="Use local backend services.")
+    parser.add_argument(
+        "--debug",
+        action='store_true',
+        help="Run the Flask application in debug mode.")
+
+    args = parser.parse_args()
+
+    if args.local:
+        config = os.path.join(os.path.dirname(__file__), 'local_config.json')
+        app.config['gcp'] = json.load(open(config))
+
+    app.run(debug=args.debug)

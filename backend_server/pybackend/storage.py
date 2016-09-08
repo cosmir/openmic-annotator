@@ -29,9 +29,9 @@ class LocalData(object):
 class LocalBlob(LocalData):
 
     def upload_from_string(self, fstream, content_type):
-        obj = dict(fstream=fstream, content_type=content_type)
-        with open(self.path, 'w') as fp:
-            json.dump(obj, fp)
+        # obj = dict(fstream=fstream, content_type=content_type)
+        with open(self.path, 'wb') as fp:
+            fp.write(fstream)
 
 
 class LocalBucket(LocalData):
@@ -94,7 +94,7 @@ class Storage(object):
         nothing?
             Not sure what a sane response object is here.
         """
-        logger.debug("Uploading to {}: {}".format(key, fdata))
+        logger.debug("Uploading {} bytes to {}.".format(len(fdata), key))
         bucket = self.client.get_bucket(self.name)
         blob = bucket.blob(key)
         blob.upload_from_string(fdata, content_type="application/octet-stream")

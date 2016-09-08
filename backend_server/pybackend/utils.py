@@ -15,8 +15,8 @@ def uuid(data):
     uuid : uuid
         Generated unique identifier.
     """
-    if hasattr(data, 'encode'):
-        data = data.encode('utf-8')
+    if isinstance(data, str):
+        data = bytes(data)
 
     hex_data = hashlib.md5(data).hexdigest()
-    return UUID(hex=hex_data, version=1)
+    return UUID(hex=hex_data, version=4)

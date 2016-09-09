@@ -4,5 +4,10 @@
         "name": "audio-data",
         "backend": "local",
         "local_dir": "tmp"
+    },
+    "database": {
+        "backend": "local",
+        "filepath": "tmp/database-file.json",
+        "mode": "a"
     }
 }

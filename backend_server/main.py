@@ -106,9 +106,10 @@ def audio_upload():
         dbase = pybackend.database.Database(
             project_id=app.config['gcp']['project_id'],
             **app.config['gcp']['database'])
-        record = dict(key=key, filepath=filepath,
+        record = dict(filepath=filepath,
                       created=str(datetime.datetime.now()))
-        dbase.put(record)
+        dbase.put(key, record)
+        record.update(key=key)
         response.update(
             status=200, data=record,
             message="Received {} bytes of data.".format(len(bytestring)))

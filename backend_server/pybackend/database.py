@@ -2,6 +2,8 @@ import json
 from gcloud import datastore
 import os
 
+from . import GCLOUD, LOCAL
+
 # Start clean
 WRITE = 'w'
 # Load any existing data
@@ -68,3 +70,13 @@ class GClient(object):
         # Create Entity from record + key
         # self._client.put(entity)
         pass
+
+
+BACKENDS = {
+    GCLOUD: GClient,
+    LOCAL: LocalClient
+}
+
+
+def Database(project_id, backend, *kwargs):
+    return BACKENDS[backend](project_id, **kwargs)

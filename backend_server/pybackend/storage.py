@@ -1,12 +1,10 @@
 from gcloud import storage
-import json
 import logging
 import os
 
-logger = logging.getLogger(__name__)
+from . import GCLOUD, LOCAL
 
-GCLOUD = 'gcloud'
-LOCAL = 'local'
+logger = logging.getLogger(__name__)
 
 
 def _makedirs(dpath):

@@ -118,6 +118,37 @@ def audio_upload():
     return json.dumps(response)
 
 
+@app.route('/audio/<key>', methods=['GET'])
+def audio_download(key):
+    """
+    To GET responses from this endpoint:
+
+    $ curl -XGET localhost:8080/audio/bbdde322-c604-4753-b828-9fe8addf17b9
+
+    TODO: Define / adopt common response schema for endpoints.
+    """
+    response = dict(message='Resource not found', status=404)
+    if request.method == 'GET':
+        dbase = pybackend.database.Database(
+            project_id=app.config['gcp']['project_id'],
+            **app.config['gcp']['database'])
+
+        entity = dbase.get(key)
+        if entity is None:
+            response.update(status=404,
+                            message="Resource not found: {}".format(key))
+
+        store = pybackend.storage.Storage(
+            project_id=app.config['gcp']['project_id'],
+            **app.config['gcp']['storage'])
+
+        response.update(
+            status=200,
+            message="testing")
+
+    return json.dumps(response)
+
+
 @app.route('/annotation/submit', methods=['POST'])
 def annotation_submit():
     """

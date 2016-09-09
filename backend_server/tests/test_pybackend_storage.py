@@ -21,6 +21,13 @@ def test_LocalBlob_upload_from_string(tmpdir):
     assert os.path.exists(blob.path)
 
 
+def test_LocalBlob_download_as_string(tmpdir):
+    blob = S.LocalBlob('foobaz.json', str(tmpdir))
+    sdata = "hooo boy, hooeee"
+    blob.upload_from_string(sdata, "application/octet-stream")
+    assert blob.download_as_string() == sdata
+
+
 def test_LocalBucket_blob(tmpdir):
     bucket = S.LocalBucket('foobizbaz', str(tmpdir))
     key = "barbar.json"

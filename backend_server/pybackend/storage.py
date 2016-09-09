@@ -31,6 +31,11 @@ class LocalBlob(LocalData):
         with open(self.path, 'wb') as fp:
             fp.write(fstream)
 
+    def download_as_string(self):
+        with open(self.path, 'rb') as fp:
+            fdata = fp.read()
+        return fdata
+
 
 class LocalBucket(LocalData):
 
@@ -97,3 +102,8 @@ class Storage(object):
         blob = bucket.blob(key)
         blob.upload_from_string(fdata, content_type="application/octet-stream")
         return
+
+    def download(self, key):
+        bucket = self.client.get_bucket(self.name)
+        blob = bucket.get_blob(key)
+        return blob.download_as_string()

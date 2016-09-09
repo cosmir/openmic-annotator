@@ -8,6 +8,6 @@
     "database": {
         "backend": "local",
         "filepath": "tmp/database-file.json",
-        "mode": "a"
+        "mode": "w"
     }
 }

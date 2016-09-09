@@ -78,5 +78,5 @@ BACKENDS = {
 }
 
 
-def Database(project_id, backend, *kwargs):
+def Database(project_id, backend, **kwargs):
     return BACKENDS[backend](project_id, **kwargs)

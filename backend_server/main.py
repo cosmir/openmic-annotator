@@ -62,6 +62,7 @@ import logging
 import requests
 import os
 
+import pybackend.database
 import pybackend.storage
 import pybackend.utils
 
@@ -96,7 +97,7 @@ def audio_upload():
             project_id=app.config['gcp']['project_id'],
             **app.config['gcp']['storage'])
 
-        key = pybackend.utils.uuid(bytestring)
+        key = str(pybackend.utils.uuid(bytestring))
         fext = os.path.splitext(audio_data.filename)[-1]
         filepath = "{}{}".format(key, fext)
         store.upload(bytestring, filepath)

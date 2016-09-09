@@ -4,6 +4,8 @@ from io import BytesIO
 import json
 import os
 
+import pybackend.utils as utils
+
 
 @pytest.fixture
 def app():
@@ -33,6 +35,7 @@ def test_annotation_submit(app):
     assert r.status_code == 200
 
 
+@pytest.mark.skipif(not utils.check_connection(), reason='No internet')
 def test_annotation_taxonomy(app):
     r = app.get('/annotation/taxonomy')
     assert r.status_code == 200

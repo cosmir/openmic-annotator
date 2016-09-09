@@ -55,6 +55,7 @@ Be sure to replace <PROJECT_ID> with the appropriate one matching the account
 you've configured.
 """
 import argparse
+import datetime
 from flask import Flask, request
 import json
 import logging
@@ -97,14 +98,19 @@ def audio_upload():
 
         key = pybackend.utils.uuid(bytestring)
         fext = os.path.splitext(audio_data.filename)[-1]
-        key = "{}{}".format(key, fext)
-        store.upload(bytestring, key)
+        filepath = "{}{}".format(key, fext)
+        store.upload(bytestring, filepath)
 
         # Index in datastore
         # Keep things like extension, storage platform, mimetype, etc.
-
+        dbase = pybackend.database.Database(
+            project_id=app.config['gcp']['project_id'],
+            **app.config['gcp']['database'])
+        record = dict(key=key, filepath=filepath,
+                      created=str(datetime.datetime.now()))
+        dbase.put(record)
         response.update(
-            status=200, key=key,
+            status=200, data=record,
             message="Received {} bytes of data.".format(len(bytestring)))
 
     return json.dumps(response)

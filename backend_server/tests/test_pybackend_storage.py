@@ -16,14 +16,14 @@ def test_LocalData_path(tmpdir):
 
 def test_LocalBlob_upload_from_string(tmpdir):
     blob = S.LocalBlob('foobaz.json', str(tmpdir))
-    sdata = "hooo boy, hooeee"
+    sdata = b"hooo boy, hooeee"
     blob.upload_from_string(sdata, "application/octet-stream")
     assert os.path.exists(blob.path)
 
 
 def test_LocalBlob_download_as_string(tmpdir):
     blob = S.LocalBlob('foobaz.json', str(tmpdir))
-    sdata = "hooo boy, hooeee"
+    sdata = b"hooo boy, hooeee"
     blob.upload_from_string(sdata, "application/octet-stream")
     assert blob.download_as_string() == sdata
 
@@ -76,4 +76,4 @@ def test_Storage_client(tmpdir):
 def test_Storage_upload(tmpdir):
     store = S.Storage('blah-blah-5678', 'my-project-3', backend=S.LOCAL,
                       local_dir=str(tmpdir))
-    store.upload("hello darkness my old friend", 'song')
+    store.upload(b"hello darkness my old friend", 'song')

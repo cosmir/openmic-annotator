@@ -1,4 +1,5 @@
 from gcloud import storage
+import io
 import logging
 import os
 
@@ -26,12 +27,29 @@ class LocalData(object):
 
 class LocalBlob(LocalData):
 
-    def upload_from_string(self, fstream, content_type):
-        # obj = dict(fstream=fstream, content_type=content_type)
+    def upload_from_string(self, bstream, content_type):
+        """Upload data as a bytestring.
+
+        Parameters
+        ----------
+        bstream : bytes
+            Bytestring to upload.
+
+        content_type : str
+            Not used; preserved for consistency with gcloud.storage.
+        """
+        # obj = dict(bstream=bstream, content_type=content_type)
         with open(self.path, 'wb') as fp:
-            fp.write(fstream)
+            fp.write(bstream)
 
     def download_as_string(self):
+        """Upload data as a bytestring.
+
+        Returns
+        -------
+        bstream : bytes
+            Bytestring format of the data.
+        """
         with open(self.path, 'rb') as fp:
             fdata = fp.read()
         return fdata

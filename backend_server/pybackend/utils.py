@@ -22,7 +22,7 @@ def uuid(data):
         Generated unique identifier.
     """
     if isinstance(data, str):
-        data = bytes(data, 'utf8')
+        data = bytearray(data, 'utf8')
 
     hex_data = hashlib.md5(data).hexdigest()
     return UUID(hex=hex_data, version=4)

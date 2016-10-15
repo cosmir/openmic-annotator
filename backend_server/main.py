@@ -64,38 +64,32 @@ def audio_upload():
       - Store user data (who uploaded this? IP address?)
       -
     """
+    audio_data = request.files['audio']
+    bytestring = audio_data.stream.read()
 
-    data = json.dumps(dict(message='Invalid request'))
-    status = 405
-    if request.method == 'POST':
-        audio_data = request.files['audio']
-        bytestring = audio_data.stream.read()
+    # Copy to cloud storage
+    store = pybackend.storage.Storage(
+        project_id=app.config['cloud']['project_id'],
+        **app.config['cloud']['storage'])
 
-        # Copy to cloud storage
-        store = pybackend.storage.Storage(
-            project_id=app.config['cloud']['project_id'],
-            **app.config['cloud']['storage'])
+    uri = str(pybackend.utils.uuid(bytestring))
+    fext = os.path.splitext(audio_data.filename)[-1]
+    filepath = "{}{}".format(uri, fext)
+    store.upload(bytestring, filepath)
 
-        uri = str(pybackend.utils.uuid(bytestring))
-        fext = os.path.splitext(audio_data.filename)[-1]
-        filepath = "{}{}".format(uri, fext)
-        store.upload(bytestring, filepath)
+    # Index in datastore
+    # Keep things like extension, storage platform, mimetype, etc.
+    dbase = pybackend.database.Database(
+        project_id=app.config['cloud']['project_id'],
+        **app.config['cloud']['database'])
+    record = dict(filepath=filepath,
+                  created=str(datetime.datetime.now()))
+    dbase.put(uri, record)
+    record.update(
+        uri=uri,
+        message="Received {} bytes of data.".format(len(bytestring)))
 
-        # Index in datastore
-        # Keep things like extension, storage platform, mimetype, etc.
-        dbase = pybackend.database.Database(
-            project_id=app.config['cloud']['project_id'],
-            **app.config['cloud']['database'])
-        record = dict(filepath=filepath,
-                      created=str(datetime.datetime.now()))
-        dbase.put(uri, record)
-        record.update(
-            uri=uri,
-            message="Received {} bytes of data.".format(len(bytestring)))
-        status = 200
-        data = json.dumps(record)
-
-    resp = Response(data, status=status,
+    resp = Response(json.dumps(record), status=200,
                     mimetype=pybackend.mime.MIMETYPES['json'])
     resp.headers['Link'] = SOURCE
     return resp
@@ -109,37 +103,30 @@ def audio_download(uri):
     $ curl -XGET localhost:8080/audio/bbdde322-c604-4753-b828-9fe8addf17b9
     """
 
-    if request.method == 'GET':
-        dbase = pybackend.database.Database(
-            project_id=app.config['cloud']['project_id'],
-            **app.config['cloud']['database'])
+    dbase = pybackend.database.Database(
+        project_id=app.config['cloud']['project_id'],
+        **app.config['cloud']['database'])
 
-        entity = dbase.get(uri)
-        if entity is None:
-            msg = "Resource not found: {}".format(uri)
-            app.logger.info(msg)
-            resp = Response(
-                json.dumps(dict(message=msg)),
-                status=404)
-
-        else:
-            store = pybackend.storage.Storage(
-                project_id=app.config['cloud']['project_id'],
-                **app.config['cloud']['storage'])
-
-            data = store.download(entity['filepath'])
-            app.logger.debug("Returning {} bytes".format(len(data)))
-
-            resp = send_file(
-                io.BytesIO(data),
-                attachment_filename=entity['filepath'],
-                mimetype=pybackend.mime.mimetype_for_file(entity['filepath']))
+    entity = dbase.get(uri)
+    if entity is None:
+        msg = "Resource not found: {}".format(uri)
+        app.logger.info(msg)
+        resp = Response(
+            json.dumps(dict(message=msg)),
+            status=404)
 
     else:
-        # Flask does this for us.
-        resp = Response(
-            json.dumps(dict(message="METHOD NOT ALLOWED")),
-            status=405)
+        store = pybackend.storage.Storage(
+            project_id=app.config['cloud']['project_id'],
+            **app.config['cloud']['storage'])
+
+        data = store.download(entity['filepath'])
+        app.logger.debug("Returning {} bytes".format(len(data)))
+
+        resp = send_file(
+            io.BytesIO(data),
+            attachment_filename=entity['filepath'],
+            mimetype=pybackend.mime.mimetype_for_file(entity['filepath']))
 
     resp.headers['Link'] = SOURCE
     return resp
@@ -155,17 +142,17 @@ def annotation_submit():
         -d '{"message":"Hello Data"}'
     """
 
-    data = json.dumps(dict(message='METHOD NOT ALLOWED'))
-    status = 400
-
-    conds = [request.method == 'POST',
-             request.headers['Content-Type'] == 'application/json']
-    if all(conds):
+    if request.headers['Content-Type'] == 'application/json':
         app.logger.info("Received Annotation:\n{}"
                         .format(json.dumps(request.json, indent=2)))
         # obj = json.loads(request.data)
         data = json.dumps(dict(message='Success!'))
         status = 200
+
+    else:
+        status = 400
+        data = json.dumps(dict(message='Invalid Content-Type; '
+                                       'only accepts application/json'))
 
     resp = Response(
         data, status=status, mimetype=pybackend.mime.MIMETYPES['json'])

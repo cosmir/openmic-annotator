@@ -1,59 +1,19 @@
 """Flask Backend Server for managing audio content.
 
+Please see README.md for instructions.
 
-Running Locally
----------------
-First, follow the directions to install the App Engine SDK:
+Starting Locally
+----------------
+$ dev_appserver.py .
 
-  https://cloud.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python
-
-Then, once that's all set, you should be able to do the following from
-repository root:
-
-  $ cd backend_server
-  $ dev_appserver.py .
-
-At this point, the endpoints should be live via localhost:
-
-  $ curl -X GET localhost:8080/annotation/taxonomy
-  $ curl -F "audio=@some_file.mp3" localhost:8080/audio/upload
-
-
-Deploying to App Engine
------------------------
-For the time being, you will need to create your own App Engine project. To do
-so, follow the directions here:
-
-  https://console.cloud.google.com/freetrial?redirectPath=/start/appengine
-
-Once this is configured, make note of your `PROJECT_ID`, because you're going
-to need it.
-
-  $ cd backend_server
-  $ pip install -t lib -r requirements/setup/requirements_dev.txt
-  $ appcfg.py -A <PROJECT_ID> -V v1 update .
-
-From here, the app should be deployed to the following URL:
-
-  http://<PROJECT_ID>.appspot.com
-
-You can then poke the endpoints as one would expect:
-
-  $ curl -X GET http://<PROJECT_ID>.appspot.com/annotation/taxonomy
-  $ curl -F "audio=@some_file.mp3" http://<PROJECT_ID>/audio/upload
-
-
-Shutting Down App Engine
-------------------------
-After deploying the application, you may wish to shut it down so as to not
-ring up unnecessary charges / usage. Proceed to the following URL and click
-all the things that say "Shutdown" for maximum certainty:
-
-  https://console.cloud.google.com/appengine/instances?project=<PROJECT_ID>
-
-Be sure to replace <PROJECT_ID> with the appropriate one matching the account
-you've configured.
+Endpoints
+---------
+  - /audio/upload : POST
+  - /audio/<uri> : GET
+  - /annotation/submit : POST
+  - /annotation/taxonomy : GET
 """
+
 import argparse
 import datetime
 from flask import Flask, request
@@ -69,8 +29,11 @@ import pybackend.utils
 
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
-GCP_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
-app.config['gcp'] = json.load(open(GCP_CONFIG))
+
+# Set the cloud backend
+# TODO: This should be controlled by `app.yaml`, right?
+CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
+app.config['cloud'] = json.load(open(CLOUD_CONFIG))
 
 
 @app.route('/')
@@ -94,8 +57,8 @@ def audio_upload():
 
         # Copy to cloud storage
         store = pybackend.storage.Storage(
-            project_id=app.config['gcp']['project_id'],
-            **app.config['gcp']['storage'])
+            project_id=app.config['cloud']['project_id'],
+            **app.config['cloud']['storage'])
 
         key = str(pybackend.utils.uuid(bytestring))
         fext = os.path.splitext(audio_data.filename)[-1]
@@ -105,8 +68,8 @@ def audio_upload():
         # Index in datastore
         # Keep things like extension, storage platform, mimetype, etc.
         dbase = pybackend.database.Database(
-            project_id=app.config['gcp']['project_id'],
-            **app.config['gcp']['database'])
+            project_id=app.config['cloud']['project_id'],
+            **app.config['cloud']['database'])
         record = dict(filepath=filepath,
                       created=str(datetime.datetime.now()))
         dbase.put(key, record)
@@ -130,8 +93,8 @@ def audio_download(key):
     response = dict(message='Resource not found', status=404)
     if request.method == 'GET':
         dbase = pybackend.database.Database(
-            project_id=app.config['gcp']['project_id'],
-            **app.config['gcp']['database'])
+            project_id=app.config['cloud']['project_id'],
+            **app.config['cloud']['database'])
 
         entity = dbase.get(key)
         if entity is None:
@@ -140,8 +103,8 @@ def audio_download(key):
         else:
 
             store = pybackend.storage.Storage(
-                project_id=app.config['gcp']['project_id'],
-                **app.config['gcp']['storage'])
+                project_id=app.config['cloud']['project_id'],
+                **app.config['cloud']['storage'])
             fdata = store.download(entity['filepath'])
             print(fdata[:500])
             response.update(
@@ -214,6 +177,6 @@ if __name__ == '__main__':
 
     if args.local:
         config = os.path.join(os.path.dirname(__file__), 'local_config.json')
-        app.config['gcp'] = json.load(open(config))
+        app.config['cloud'] = json.load(open(config))
 
     app.run(debug=args.debug)

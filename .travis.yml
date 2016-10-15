@@ -24,10 +24,10 @@ install:
   - pip install --upgrade tox
   - pip install --upgrade protobuf
   - pip install coveralls
-  - pip install -U -t backend_server/lib -r backend_server/requirements/setup/requirements_dev.txt
+  - pip install -U -r backend_server/requirements/setup/requirements_dev.txt
 
 script:
-  - PYTHONPATH=backend_server:backend_server/lib:$PYTHONPATH py.test -vs backend_server/tests
+  - PYTHONPATH=backend_server:$PYTHONPATH py.test -vs backend_server/tests
 
 after_success:
   - coveralls

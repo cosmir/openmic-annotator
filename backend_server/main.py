@@ -110,9 +110,9 @@ def audio_download(uri):
     """
 
     # Create the null response.
-    data = json.dumps(dict(message='Resource not found for `{}`'.format(uri)))
-    resp = Response(data, status=404,
-                    mimetype=pybackend.mime.MIMETYPES['json'])
+    resp = Response(
+        json.dumps(dict(message='Resource not found for `{}`'.format(uri))),
+        status=404, mimetype=pybackend.mime.MIMETYPES['json'])
 
     if request.method == 'GET':
         dbase = pybackend.database.Database(
@@ -149,17 +149,23 @@ def annotation_submit():
         -X POST localhost:8080/annotation/submit \
         -d '{"message":"Hello Data"}'
     """
-    response = dict(message='nothing happened', status=400)
+
+    data = json.dumps(dict(message='Invalid request.'))
+    status = 400
+
     conds = [request.method == 'POST',
              request.headers['Content-Type'] == 'application/json']
     if all(conds):
         app.logger.info("Received Annotation:\n{}"
                         .format(json.dumps(request.json, indent=2)))
         # obj = json.loads(request.data)
-        response['message'] = "success"
-        response['status'] = 200
+        data = json.dumps(dict(message='Success!'))
+        status = 200
 
-    return json.dumps(response)
+    resp = Response(
+        data, status=status, mimetype=pybackend.mime.MIMETYPES['json'])
+    resp.headers['Link'] = SOURCE
+    return resp
 
 
 @app.route('/annotation/taxonomy', methods=['GET'])
@@ -169,17 +175,21 @@ def annotation_taxonomy():
 
     $ curl -X GET localhost:8080/annotation/taxonomy
 
-    TODO: Clean this up per @alastair's feedback. Also warrants a response
-    schema, rather than just the serialized taxonomy.
+    TODO: Clean this up per @alastair's feedback.
     """
+    data = json.dumps(dict(message='Invalid request.'))
+    status = 404
+
     tax_url = ("https://raw.githubusercontent.com/marl/jams/master/jams/"
                "schemata/namespaces/tag/medleydb_instruments.json")
     res = requests.get(tax_url)
-    tax = {}
     if res.text:
-        tax = json.loads(res.text)
+        data = json.loads(res.text)
+        status = 200
 
-    return json.dumps(tax)
+    resp = Response(data, status=status)
+    resp.headers['Link'] = SOURCE
+    return resp
 
 
 @app.errorhandler(500)

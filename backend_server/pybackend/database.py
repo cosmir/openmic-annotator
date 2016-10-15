@@ -56,7 +56,6 @@ class GClient(object):
     """Thin wrapper for gcloud's DataStore client"""
 
     def __init__(self, project_id):
-        # super(ClassName, self).__init__()
         self.project_id = project_id
 
     @property
@@ -64,12 +63,17 @@ class GClient(object):
         return datastore.Client(self.project_id)
 
     def get(self, key):
+        raise NotImplementedError("Placeholder, needs revisiting.")
+        key = self._client.key("key", key)
         return self._client.get(key)
 
     def put(self, key, record):
+        raise NotImplementedError("Placeholder, needs revisiting.")
         # Create Entity from record + key
-        # self._client.put(entity)
-        pass
+        key = self._client.key("key", key)
+        entity = datastore.Entity(key, exclude_from_indexes=[])
+        entity.update(record)
+        self._client.put(entity)
 
 
 BACKENDS = {

@@ -28,6 +28,11 @@ def test_audio_upload(app):
     assert r.status_code == 200
 
 
+def test_audio_upload_bad_request(app):
+    r = app.get('/audio/upload')
+    assert r.status_code != 405
+
+
 def test_audio_get(app):
     # First we'll generate data...
     data = dict(audio=(BytesIO(b'my new file contents'), 'blah.wav'))
@@ -38,6 +43,17 @@ def test_audio_get(app):
     # Now let's go looking for it
     r = app.get('/audio/{}'.format(uri))
     assert r.status_code == 200
+
+
+def test_audio_get_no_resource(app):
+    r = app.get('/audio/{}'.format("definitelydoesntexist"))
+    assert r.status_code == 404
+
+
+def test_audio_post_fails(app):
+    data = dict(audio=(BytesIO(b'my new file contents'), 'blah.wav'))
+    r = app.post('/audio/{}'.format("abc"), data=data)
+    assert r.status_code == 405
 
 
 def test_annotation_submit(app):

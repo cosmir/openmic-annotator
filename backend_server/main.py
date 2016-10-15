@@ -66,7 +66,7 @@ def audio_upload():
     """
 
     data = json.dumps(dict(message='Invalid request'))
-    status = 400
+    status = 405
     if request.method == 'POST':
         audio_data = request.files['audio']
         bytestring = audio_data.stream.read()
@@ -109,11 +109,6 @@ def audio_download(uri):
     $ curl -XGET localhost:8080/audio/bbdde322-c604-4753-b828-9fe8addf17b9
     """
 
-    # Create the null response.
-    resp = Response(
-        json.dumps(dict(message='Resource not found for `{}`'.format(uri))),
-        status=404, mimetype=pybackend.mime.MIMETYPES['json'])
-
     if request.method == 'GET':
         dbase = pybackend.database.Database(
             project_id=app.config['cloud']['project_id'],
@@ -121,7 +116,11 @@ def audio_download(uri):
 
         entity = dbase.get(uri)
         if entity is None:
-            app.logger.info("Resource not found: {}".format(uri))
+            msg = "Resource not found: {}".format(uri)
+            app.logger.info(msg)
+            resp = Response(
+                json.dumps(dict(message=msg)),
+                status=404)
 
         else:
             store = pybackend.storage.Storage(
@@ -135,6 +134,12 @@ def audio_download(uri):
                 io.BytesIO(data),
                 attachment_filename=entity['filepath'],
                 mimetype=pybackend.mime.mimetype_for_file(entity['filepath']))
+
+    else:
+        # Flask does this for us.
+        resp = Response(
+            json.dumps(dict(message="METHOD NOT ALLOWED")),
+            status=405)
 
     resp.headers['Link'] = SOURCE
     return resp
@@ -150,7 +155,7 @@ def annotation_submit():
         -d '{"message":"Hello Data"}'
     """
 
-    data = json.dumps(dict(message='Invalid request.'))
+    data = json.dumps(dict(message='METHOD NOT ALLOWED'))
     status = 400
 
     conds = [request.method == 'POST',
@@ -177,7 +182,7 @@ def annotation_taxonomy():
 
     TODO: Clean this up per @alastair's feedback.
     """
-    data = json.dumps(dict(message='Invalid request.'))
+    data = json.dumps(dict(message='Resource not found'))
     status = 404
 
     tax_url = ("https://raw.githubusercontent.com/marl/jams/master/jams/"

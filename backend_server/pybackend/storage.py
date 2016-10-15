@@ -45,6 +45,9 @@ class LocalBucket(LocalData):
     def blob(self, name):
         return LocalBlob(name, root=_makedirs(self.path))
 
+    def get_blob(self, name):
+        return LocalBlob(name, root=self.path)
+
 
 class LocalClient(object):
 

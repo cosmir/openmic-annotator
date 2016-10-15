@@ -137,16 +137,19 @@ def audio_download(key):
         if entity is None:
             response.update(status=404,
                             message="Resource not found: {}".format(key))
+        else:
 
-        store = pybackend.storage.Storage(
-            project_id=app.config['gcp']['project_id'],
-            **app.config['gcp']['storage'])
-
-        response.update(
-            status=200,
-            message="testing")
-
-    return json.dumps(response)
+            store = pybackend.storage.Storage(
+                project_id=app.config['gcp']['project_id'],
+                **app.config['gcp']['storage'])
+            fdata = store.download(entity['filepath'])
+            print(fdata[:500])
+            response.update(
+                status=200,
+                message="Success",
+                data=dict(bytes=str(fdata)))
+            return fdata
+    # return json.dumps(response)
 
 
 @app.route('/annotation/submit', methods=['POST'])

@@ -36,6 +36,17 @@ def test_LocalBucket_blob(tmpdir):
     assert blob.path.endswith(key)
 
 
+def test_LocalBucket_get_blob(tmpdir):
+    bucket = S.LocalBucket('foobizbaz', str(tmpdir))
+    key = "barbar.json"
+    blob = bucket.blob(key)
+    assert os.path.exists(bucket.path)
+    assert blob.path.endswith(key)
+
+    blob2 = bucket.get_blob(key)
+    assert blob2
+
+
 def test_LocalClient___init__(tmpdir):
     assert S.LocalClient('my-project', str(tmpdir))
 

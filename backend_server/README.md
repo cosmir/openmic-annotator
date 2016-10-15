@@ -43,7 +43,7 @@ The endpoints should now be live via `localhost` (default deployment is to port 
 
 ## Deploying to App Engine
 
-`TODO(ejhumphrey):` Is it possible to have pre-deployment testing hooks? If so, that should be documented here.
+`TODO(ejhumphrey):` Is it possible to have pre-deployment testing hooks? If so, that should be documented here. **Update:** Survey says [yes](https://github.com/GoogleCloudPlatform/continuous-deployment-demo/blob/master/.travis.yml).
 
 For the time being, you will need to create your own App Engine project. To do so, follow the directions here:
 

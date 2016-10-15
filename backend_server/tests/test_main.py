@@ -38,7 +38,7 @@ def test_audio_get(app):
     data = dict(audio=(BytesIO(b'my new file contents'), 'blah.wav'))
     r = app.post('/audio/upload', data=data)
     assert r.status_code == 200
-    uri = json.loads(r.data)['uri']
+    uri = json.loads(r.data.decode('utf-8'))['uri']
 
     # Now let's go looking for it
     r = app.get('/audio/{}'.format(uri))

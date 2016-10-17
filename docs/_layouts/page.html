@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="/assets/css/style.css">
     <script src="/assets/bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {inlineMath: [['$','$']]}
+      });
+    </script>
+    <script type="text/javascript" async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script>
 
     <title>{{ page.title }}</title>
   </head>
@@ -37,10 +43,15 @@
     </nav>
 
     <div class="container" role="main">
-      <ul class="nav nav-tabs">
+      <ul class="nav nav-tabs nav-tabs-left">
         <li role="presentation" {% if page.url == "/" %}class="active"{% endif %}><a href="/{{ site.github.project_title }}/">OpenMIC</a></li>
+        <li role="presentation" {% if page.url == "/task1.html" %}class="active"{% endif %}><a href="/{{ site.github.project_title }}/task1.html">Task 1</a></li>
+        <li role="presentation" {% if page.url == "/task2.html" %}class="active"{% endif %}><a href="/{{ site.github.project_title }}/task2.html">Task 2</a></li>
         <li role="presentation" {% if page.url == "/contribute.html" %}class="active"{% endif %}><a href="/{{ site.github.project_title }}/contribute.html">Contribute</a></li>
-        <li role="presentation" {% if page.url == "/downloads.html" %}class="active"{% endif %}><a href="/{{ site.github.project_title }}/downloads.html">Downloads</a></li>
+        <li role="presentation" {% if page.url == "/downloads.html" %}class="active"{% endif %}><a href="#">Downloads</a></li>
+      </ul>
+      <ul class="nav nav-tabs nav-tabs-right">
+        <li role="presentation" {% if page.url == "/submit.html" %}class="active"{% endif %}><a href="#">Submit</a></li>
       </ul>
       <div class="tab-content">
         <div class="tab-pane active" id="1">

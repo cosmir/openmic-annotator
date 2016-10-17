@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <script src="/assets/bootstrap/js/bootstrap.min.js"></script>
+
+    <title>{{ page.title }}</title>
+  </head>
+  <body>
+
+    <nav class="navbar navbar-inverse">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">COSMIR</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li {% if page.url == "/" %}class="active"{% endif %}><a href="/">Home</a></li>
+            <li {% if page.url == "/about.html" %}class="active"{% endif %}><a href="/about.html">About</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container" role="main">
+      <ul class="nav nav-tabs">
+        <li role="presentation" {% if page.url == "/open-mic/" %}class="active"{% endif %}><a href="/open-mic/">OpenMIC</a></li>
+        <li role="presentation" {% if page.url == "/open-mic/contribute.html" %}class="active"{% endif %}><a href="/open-mic/contribute.html">Contribute</a></li>
+        <li role="presentation" {% if page.url == "/open-mic/downloads.html" %}class="active"{% endif %}><a href="/open-mic/downloads.html">Downloads</a></li>
+      </ul>
+      <div class="tab-content">
+        <div class="tab-pane active" id="1">
+          {{ content }}
+        </div>
+      </div>
+    </div>
+
+    <footer class="bs-footer">
+      <div class="container text-center">
+        footer
+      </div>
+    </footer>
+
+  </body>
+</html>

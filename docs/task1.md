@@ -17,7 +17,7 @@ The input to the system is a music audio file. The output is the set of instrume
 
 [TBD]
 
-In the following, let $X=\{x_1,\dots,x_n\}$ be the set of instruments annotated for the input audio file, and let $Y=\{y_1,\dots,y_m\}$ be the set of instruments predicted by the system for that same audio file. In addition, let $1[e]$ be an indicator function that evaluates to $1$ if $e$ is true and $0$ otherwise.
+In the following, let $X=\\{x_1,\dots,x_n\\}$ be the set of instruments annotated for the input audio file, and let $Y=\\{y_1,\dots,y_m\\}$ be the set of instruments predicted by the system for that same audio file. In addition, let $1[e]$ be an indicator function that evaluates to $1$ if $e$ is true and $0$ otherwise.
 
 ### Hierarchy-unaware Measures
 
@@ -37,7 +37,7 @@ $$F=2\frac{P\cdot R}{P+R}$$
 
 ### Hierarchy-aware Measures
 
-We will use the hierarchical counterparts of $P$, $R$ and $F$ defined by Kiritchenko et al. Let $anc(x)$ be a function that returns the set of ancestors of class $x$, excluding the root of the hierarchy. The extended set of reference annotations is thus $X^*=\cup_{x\in X}{anc(x)}$, while the extended set of predictions is similarly $Y^*=\cup_{y\in Y}{anc(y)}. The above measures can now be reformulated as follows to account for the hierarchy:
+We will use the hierarchical counterparts of $P$, $R$ and $F$ defined by Kiritchenko et al. Let $anc(x)$ be a function that returns the set of ancestors of class $x$, excluding the root of the hierarchy. The extended set of reference annotations is thus $X^\*=\cup_{x\in X}{anc(x)}$, while the extended set of predictions is similarly $Y^\*=\cup_{y\in Y}{anc(y)}$. The above measures can now be reformulated as follows to account for the hierarchy:
 
 - **hPrecision:**
 

@@ -26,8 +26,11 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-            <li {% if page.url == "/" %}class="active"{% endif %}><a href="/">Home</a></li>
-            <li {% if page.url == "/about.html" %}class="active"{% endif %}><a href="/about.html">About</a></li>
+            <li><a href="/">Home</a></li>
+            <li class="active"><a href="/{{ site.github.project_title }}/">OpenMIC Challenge</a></li><!-- always active because we're under a challenge's site -->
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="/about.html">About</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -35,9 +38,9 @@
 
     <div class="container" role="main">
       <ul class="nav nav-tabs">
-        <li role="presentation" {% if page.url == "/open-mic/" %}class="active"{% endif %}><a href="/open-mic/">OpenMIC</a></li>
-        <li role="presentation" {% if page.url == "/open-mic/contribute.html" %}class="active"{% endif %}><a href="/open-mic/contribute.html">Contribute</a></li>
-        <li role="presentation" {% if page.url == "/open-mic/downloads.html" %}class="active"{% endif %}><a href="/open-mic/downloads.html">Downloads</a></li>
+        <li role="presentation" {% if page.url == "/" %}class="active"{% endif %}><a href="/{{ site.github.project_title }}/">OpenMIC</a></li>
+        <li role="presentation" {% if page.url == "/contribute.html" %}class="active"{% endif %}><a href="/{{ site.github.project_title }}/contribute.html">Contribute</a></li>
+        <li role="presentation" {% if page.url == "/downloads.html" %}class="active"{% endif %}><a href="/{{ site.github.project_title }}/downloads.html">Downloads</a></li>
       </ul>
       <div class="tab-content">
         <div class="tab-pane active" id="1">

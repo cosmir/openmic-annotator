@@ -12,3 +12,5 @@ There are different ways to contribute to OpenMIC. Most of the discussion and de
 There is also a [<i class="fa fa-google-plus-square"></i> Google Group](https://groups.google.com/forum/#!forum/open-mic-users) set up to receive more high-level notifications about OpenMIC.
 
 You are also welcome to contribute in other ways, such as with data. If you want to help us with the annotations, that will still take some time to set up, but please drop us an email or subscribe to the [Google Group](https://groups.google.com/forum/#!forum/open-mic-users) to stay up to date.
+
+However you want to contribute, please take a look first at the [code of conduct](/code-of-conduct.html).

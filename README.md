@@ -52,4 +52,4 @@ Here are instructions for running the different parts of the system.
 
 ### Content Annotation System
 
-See the [ReadMe](https://github.com/cosmir/open-mic/raw/master/backend_server/README.md) for details on running the backend web server.
+See the [ReadMe](https://github.com/cosmir/open-mic/blob/master/backend_server/README.md) for details on running the backend web server.

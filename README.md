@@ -14,7 +14,7 @@ This is the source repository for the Open-MIC initiative, a community-driven ap
 
 ## System Overview
 
-![Content Annotation System Architecture](https://github.com/cosmir/open-mic/raw/master/docs/img/system_architecture.png "Content Annotation System Architecture")
+![Content Annotation System Architecture](https://github.com/cosmir/open-mic/raw/master/docs/img/cas_architecture.png "Content Annotation System Architecture")
 
 ### Annotation State Diagram
 ![Annotation State Diagram](https://github.com/cosmir/open-mic/raw/master/docs/img/annotation_state_diagram.png "Annotation State Diagram")

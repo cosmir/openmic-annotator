@@ -1,4 +1,4 @@
-# Open-mic -- An open music informatics challenge
+# Open-MIC -- The Open Music Instrument Classification Challenge
 
 [![Build Status](https://travis-ci.org/cosmir/open-mic.svg?branch=master)](https://travis-ci.org/cosmir/open-mic)
 
@@ -12,6 +12,15 @@ This is the source repository for the Open-MIC initiative, a community-driven ap
 - [Developer mailing list](https://groups.google.com/forum/#!forum/open-mic-dev)
 - [Users mailing list](https://groups.google.com/forum/#!forum/open-mic-users)
 
+## System Overview
+
+![Content Annotation System Architecture](https://github.com/cosmir/open-mic/raw/master/docs/img/system_architecture.png "Content Annotation System Architecture")
+
+### Annotation State Diagram
+![Annotation State Diagram](https://github.com/cosmir/open-mic/raw/master/docs/img/annotation_state_diagram.png "Annotation State Diagram")
+
+### Roadmap
+![Open-MIC Roadmap - v1.2](https://github.com/cosmir/open-mic/raw/master/docs/img/roadmap.png "Open-MIC Roadmap - v1.2")
 
 ## Running the components
 

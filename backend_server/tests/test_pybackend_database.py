@@ -81,3 +81,11 @@ def test_LocalClient_append(json_file):
 
 def test_GClient___init__():
     assert D.GClient('my-proj')
+
+
+def test_Database_local(json_file):
+    db = D.Database('my-project', backend='local',
+                    filepath=json_file, mode=D.APPEND)
+    assert db
+    db.put("a", dict(name='ringo'))
+    assert db.get('a')

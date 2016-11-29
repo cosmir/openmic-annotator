@@ -46,25 +46,26 @@ CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
 app.config['cloud'] = json.load(open(CLOUD_CONFIG))
 
 SOURCE = "https://cosmir.github.io/open-mic/"
+AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
 
 
-@app.route('/')
-def hello():
-    return 'oh hai'
-
-
-@app.route('/audio/upload', methods=['POST'])
+@app.route('/api/v0.1/audio/upload', methods=['POST'])
 def audio_upload():
     """
     To POST files to this endpoint:
 
-    $ curl -F "audio=@some_file.mp3" localhost:8080/audio/upload
+    $ curl -F "audio=@some_file.mp3" localhost:8080/api/v0.1/audio/upload
 
     TODOs:
       - Store user data (who uploaded this? IP address?)
       -
     """
     audio_data = request.files['audio']
+    file_ext = os.path.splitext(audio_data.filename)[-1].strip('.')
+    if file_ext not in AUDIO_EXTENSIONS:
+        logging.exception('Attempted upload of unsupported filetype.')
+        return 'Filetype not supported.', 400
+
     bytestring = audio_data.stream.read()
 
     # Copy to cloud storage
@@ -95,7 +96,7 @@ def audio_upload():
     return resp
 
 
-@app.route('/audio/<uri>', methods=['GET'])
+@app.route('/api/v0.1/audio/<uri>', methods=['GET'])
 def audio_download(uri):
     """
     To GET responses from this endpoint:
@@ -132,7 +133,7 @@ def audio_download(uri):
     return resp
 
 
-@app.route('/annotation/submit', methods=['POST'])
+@app.route('/api/v0.1/annotation/submit', methods=['POST'])
 def annotation_submit():
     """
     To POST data to this endpoint:
@@ -160,7 +161,7 @@ def annotation_submit():
     return resp
 
 
-@app.route('/annotation/taxonomy', methods=['GET'])
+@app.route('/api/v0.1/annotation/taxonomy', methods=['GET'])
 def annotation_taxonomy():
     """
     To fetch data at this endpoint:

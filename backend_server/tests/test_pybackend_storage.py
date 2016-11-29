@@ -77,3 +77,13 @@ def test_Storage_upload(tmpdir):
     store = S.Storage('blah-blah-5678', 'my-project-3', backend=S.LOCAL,
                       local_dir=str(tmpdir))
     store.upload(b"hello darkness my old friend", 'song')
+
+
+def test_Storage_download(tmpdir):
+    store = S.Storage('blah-blah-5678', 'my-project-3', backend=S.LOCAL,
+                      local_dir=str(tmpdir))
+    key = 'my_song'
+    fdata = b"hello darkness my old friend"
+    store.upload(fdata, key)
+    res = store.download(key)
+    assert res == fdata

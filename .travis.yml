@@ -27,7 +27,7 @@ install:
   - pip install -U -r backend_server/requirements/setup/requirements_dev.txt
 
 script:
-  - PYTHONPATH=backend_server:$PYTHONPATH py.test -vs backend_server/tests
+  - PYTHONPATH=backend_server:$PYTHONPATH py.test -v --cov=pybackend backend_server/tests
 
 after_success:
   - coveralls

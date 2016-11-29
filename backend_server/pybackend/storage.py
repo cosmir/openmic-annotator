@@ -1,3 +1,16 @@
+"""Client interfaces for local and backend (binary) data storage.
+
+Example
+-------
+>>> import pybackend.storage as S
+>>> store = S.Storage(name='blah-blah-5678', project_id='my-project-3',
+                      backend=S.LOCAL, local_dir="tmp")
+>>> key = "my_song"
+>>> store.upload(b"never gonna give you up...", key)
+>>> print(store.download(key))
+b"hello darkness my old friend"
+"""
+
 from gcloud import storage
 import io
 import logging
@@ -70,10 +83,21 @@ class LocalBucket(LocalData):
 class LocalClient(object):
 
     def __init__(self, project_id, root_dir):
+        """Create a local storage client.
+
+        Paratmeters
+        -----------
+        project_id : str
+            Unique identifier for the owner of the client.
+
+        root_dir : str, default=None
+            A directory on disk for writing binary data.
+        """
         self.project_id = project_id
         self.root_dir = _makedirs(root_dir)
 
     def get_bucket(self, name):
+        """Returns a bucket for the given name."""
         return LocalBucket(name=name, root=self.root_dir)
 
 
@@ -87,6 +111,23 @@ class Storage(object):
 
     def __init__(self, name, project_id, backend=GCLOUD,
                  local_dir=None):
+        """Create a storage object.
+
+        Parameters
+        ----------
+        name : str
+            Unique name for the bucket to use, persistent across instances.
+
+        project_id : str
+            Unique identifier for the owner of this storage object.
+
+        backend : str, default='gcloud'
+            Backend storage platform to use, one of ['local', 'gcloud'].
+
+        local_dir : str, default=None
+            A local directory on disk to use for local clients; only used if
+            backend='local'.
+        """
         if backend == LOCAL and local_dir is None:
             raise ValueError(
                 "`local_dir` must be given if backend is '{}'".format(LOCAL))
@@ -112,19 +153,25 @@ class Storage(object):
 
         key : str
             Key for writing the file data.
-
-        Returns
-        -------
-        nothing?
-            Not sure what a sane response object is here.
         """
         logger.debug("Uploading {} bytes to {}.".format(len(fdata), key))
         bucket = self.client.get_bucket(self.name)
         blob = bucket.blob(key)
         blob.upload_from_string(fdata, content_type="application/octet-stream")
-        return
 
     def download(self, key):
+        """Retrieve binary data for the given key.
+
+        Parameters
+        ----------
+        key : str
+            Name of the object to retrieve.
+
+        Returns
+        -------
+        data : bytes
+            Binary data.
+        """
         bucket = self.client.get_bucket(self.name)
         blob = bucket.get_blob(key)
         return blob.download_as_string()

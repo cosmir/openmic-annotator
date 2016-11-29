@@ -116,8 +116,11 @@ class LocalClient():
 class GClient(object):
     """Thin wrapper for gcloud's DataStore client.
 
-    TODO: Currently unclear how to plumb entity "kinds" through this
-    abstraction.
+    TODO(ejhumphrey):
+     * Currently unclear how to plumb entity "kinds" through this abstraction.
+     * The put/get interface for Google's native Datastore client requires
+       some wrangling in terms of how Key objects are constructed. This
+       interface serves to abstract that behavior away.
     """
 
     def __init__(self, project_id):

@@ -3,6 +3,7 @@ import pytest
 from io import BytesIO
 import json
 import os
+import requests.status_codes
 
 import pybackend.utils as utils
 
@@ -19,54 +20,54 @@ def app():
 
 def test_audio_upload(app):
     data = dict(audio=(BytesIO(b'my file contents'), 'blah.wav'))
-    r = app.post('/api/v0.1/audio/upload', data=data)
-    assert r.status_code == 200
+    r = app.post('/api/v0.1/audio', data=data)
+    assert r.status_code == requests.status_codes.codes.OK
 
 
-def test_audio_upload_bad_request(app):
-    r = app.get('/api/v0.1/audio/upload')
-    assert r.status_code == 404
+def test_audio_upload_method_not_allowed(app):
+    r = app.get('/api/v0.1/audio')
+    assert r.status_code == requests.status_codes.codes.METHOD_NOT_ALLOWED
 
 
 def test_audio_upload_bad_filetype(app):
     data = dict(audio=(BytesIO(b'new file contents'), 'blah.exe'))
-    r = app.post('/api/v0.1/audio/upload', data=data)
-    assert r.status_code == 400
+    r = app.post('/api/v0.1/audio', data=data)
+    assert r.status_code == requests.status_codes.codes.BAD_REQUEST
 
 
 def test_audio_get(app):
     # First we'll generate data...
     content = b'my new file contents'
     data = dict(audio=(BytesIO(content), 'blah.wav'))
-    r = app.post('/api/v0.1/audio/upload', data=data)
-    assert r.status_code == 200
+    r = app.post('/api/v0.1/audio', data=data)
+    assert r.status_code == requests.status_codes.codes.OK
     uri = json.loads(r.data.decode('utf-8'))['uri']
 
     # Now let's go looking for it
     r = app.get('/api/v0.1/audio/{}'.format(uri))
-    assert r.status_code == 200
+    assert r.status_code == requests.status_codes.codes.OK
     assert r.data == content
 
 
 def test_audio_get_no_resource(app):
     r = app.get('/api/v0.1/audio/{}'.format("definitelydoesntexist"))
-    assert r.status_code == 404
+    assert r.status_code == requests.status_codes.codes.NOT_FOUND
 
 
 def test_audio_post_fails(app):
     data = dict(audio=(BytesIO(b'my new file contents'), 'blah.wav'))
     r = app.post('/api/v0.1/audio/{}'.format("abc"), data=data)
-    assert r.status_code == 405
+    assert r.status_code == requests.status_codes.codes.METHOD_NOT_ALLOWED
 
 
 def test_annotation_submit(app):
     r = app.post('/api/v0.1/annotation/submit',
                  data=json.dumps(dict(foo='bar')),
                  content_type='application/json')
-    assert r.status_code == 200
+    assert r.status_code == requests.status_codes.codes.OK
 
 
 @pytest.mark.skipif(not utils.check_connection(), reason='No internet')
 def test_annotation_taxonomy(app):
     r = app.get('/api/v0.1/annotation/taxonomy')
-    assert r.status_code == 200
+    assert r.status_code == requests.status_codes.codes.OK

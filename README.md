@@ -53,3 +53,12 @@ Here are instructions for running the different parts of the system.
 ### Content Annotation System
 
 See the [ReadMe](https://github.com/cosmir/open-mic/blob/master/backend_server/README.md) for details on running the backend web server.
+
+### Audio annotator
+
+If this is your first time checking out this repository, you'll need to pull in external
+dependencies by saying
+
+    git submodule update --init
+
+after cloning the repository.

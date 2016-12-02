@@ -25,7 +25,7 @@ def test_audio_upload(app):
 
 def test_audio_upload_bad_request(app):
     r = app.get('/api/v0.1/audio/upload')
-    assert r.status_code != 405
+    assert r.status_code != 400
 
 
 def test_audio_upload_bad_filetype(app):
@@ -36,7 +36,8 @@ def test_audio_upload_bad_filetype(app):
 
 def test_audio_get(app):
     # First we'll generate data...
-    data = dict(audio=(BytesIO(b'my new file contents'), 'blah.wav'))
+    content = b'my new file contents'
+    data = dict(audio=(BytesIO(content), 'blah.wav'))
     r = app.post('/api/v0.1/audio/upload', data=data)
     assert r.status_code == 200
     uri = json.loads(r.data.decode('utf-8'))['uri']
@@ -44,6 +45,7 @@ def test_audio_get(app):
     # Now let's go looking for it
     r = app.get('/api/v0.1/audio/{}'.format(uri))
     assert r.status_code == 200
+    assert r.data == content
 
 
 def test_audio_get_no_resource(app):

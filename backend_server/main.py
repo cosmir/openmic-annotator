@@ -28,11 +28,11 @@ from flask import send_file
 import io
 import json
 import logging
+import mimetypes
 import requests
 import os
 
 import pybackend.database
-import pybackend.mime
 import pybackend.storage
 import pybackend.utils
 
@@ -61,7 +61,7 @@ def audio_upload():
       -
     """
     audio_data = request.files['audio']
-    file_ext = os.path.splitext(audio_data.filename)[-1].strip('.')
+    file_ext = os.path.splitext(audio_data.filename)[-1].strip(os.path.extsep)
     if file_ext not in AUDIO_EXTENSIONS:
         logging.exception('Attempted upload of unsupported filetype.')
         return 'Filetype not supported.', 400
@@ -74,8 +74,7 @@ def audio_upload():
         **app.config['cloud']['storage'])
 
     uri = str(pybackend.utils.uuid(bytestring))
-    fext = os.path.splitext(audio_data.filename)[-1]
-    filepath = "{}{}".format(uri, fext)
+    filepath = os.path.extsep.join([uri, file_ext])
     store.upload(bytestring, filepath)
 
     # Index in datastore
@@ -91,7 +90,7 @@ def audio_upload():
         message="Received {} bytes of data.".format(len(bytestring)))
 
     resp = Response(json.dumps(record), status=200,
-                    mimetype=pybackend.mime.MIMETYPES['json'])
+                    mimetype=mimetypes.types_map[".json"])
     resp.headers['Link'] = SOURCE
     return resp
 
@@ -127,7 +126,7 @@ def audio_download(uri):
         resp = send_file(
             io.BytesIO(data),
             attachment_filename=entity['filepath'],
-            mimetype=pybackend.mime.mimetype_for_file(entity['filepath']))
+            mimetype=pybackend.utils.mimetype_for_file(entity['filepath']))
 
     resp.headers['Link'] = SOURCE
     return resp
@@ -156,7 +155,7 @@ def annotation_submit():
                                        'only accepts application/json'))
 
     resp = Response(
-        data, status=status, mimetype=pybackend.mime.MIMETYPES['json'])
+        data, status=status, mimetype=mimetypes.types_map[".json"])
     resp.headers['Link'] = SOURCE
     return resp
 

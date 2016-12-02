@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import mimetypes
 import six.moves.urllib.error as urlerror
 import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
@@ -52,3 +53,14 @@ def check_connection(default='http://google.com', timeout=1):
         success = False
         logger.debug("Network unreachable: {}".format(derp))
     return success
+
+
+def mimetype_for_file(fname, strict=False):
+    """Return the mimetype for a given file.
+
+    If one is not found, defaults to 'application/octect-stream'
+    """
+    mtype, enc = mimetypes.guess_type(fname)
+    if mtype is None and not strict:
+        mtype = MIMETYPES[None]
+    return mtype

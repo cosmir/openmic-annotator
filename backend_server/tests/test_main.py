@@ -25,7 +25,7 @@ def test_audio_upload(app):
 
 def test_audio_upload_bad_request(app):
     r = app.get('/api/v0.1/audio/upload')
-    assert r.status_code != 400
+    assert r.status_code == 404
 
 
 def test_audio_upload_bad_filetype(app):

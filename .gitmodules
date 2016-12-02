@@ -1,3 +1,4 @@
 [submodule "audio-annotator"]
 	path = audio-annotator
 	url = https://github.com/cosmir/audio-annotator.git
+    branch = openmic-dev

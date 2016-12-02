@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.DS_Store
 
 # C extensions
 *.so
@@ -19,6 +20,7 @@ lib/
 lib64/
 parts/
 sdist/
+tmp/
 var/
 *.egg-info/
 .installed.cfg

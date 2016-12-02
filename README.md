@@ -59,8 +59,6 @@ See the [ReadMe](https://github.com/cosmir/open-mic/blob/master/backend_server/R
 If this is your first time checking out this repository, you'll need to pull in external
 dependencies by saying
 
-    ```bash
     git submodule update --init
-    ```
 
 after cloning the repository.

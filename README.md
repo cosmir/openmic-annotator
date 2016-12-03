@@ -46,11 +46,22 @@ Here is a rough projection of the timeline for progress on the Open-MIC project,
 
 ![Open-MIC Roadmap - v1.2](https://github.com/cosmir/open-mic/raw/master/docs/img/roadmap.png "Open-MIC Roadmap - v1.2")
 
-## Running the components
 
-Here are instructions for running the different parts of the system.
+## Running the annotation machinery locally
 
-### Content Annotation System
+The easiest way to get started is to run the demo at the commandline:
+
+```
+   $ ./run_demo.sh
+```
+
+This will start the backend server (CMS), upload a few audio files, and begin serving the audio annotation tool locally. By default this will appear at [http://localhost:8000/docs/annotator.html](http://localhost:8000/docs/annotator.html).
+
+**Note**: For some reason, loading the audio seems to get "stuck" on occasion. To unblock it, manually proceed to an audio file's URL once the server is running, e.g. [http://localhost:8080/api/v0.1/audio/740c835f-a23d-41ef-b84c-0cd1de4edfa5](http://localhost:8080/api/v0.1/audio/740c835f-a23d-41ef-b84c-0cd1de4edfa5).
+
+Alternatively, instructions for running the different parts of the system are listed below.
+
+### Content Management System
 
 See the [ReadMe](https://github.com/cosmir/open-mic/blob/master/backend_server/README.md) for details on running the backend web server.
 

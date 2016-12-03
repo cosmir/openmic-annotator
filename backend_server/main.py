@@ -25,10 +25,12 @@ import argparse
 import datetime
 from flask import Flask, request, Response
 from flask import send_file
+from flask_cors import CORS
 import io
 import json
 import logging
 import mimetypes
+import random
 import requests
 import os
 
@@ -39,6 +41,11 @@ import pybackend.utils
 
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
+
+# TODO: One of the following
+#  - Whitelist localhost and `SOURCE` below.
+#  - Use AppEngine for delivery of the annotator HTML.
+CORS(app)
 
 # Set the cloud backend
 # TODO: This should be controlled by `app.yaml`, right?
@@ -195,14 +202,14 @@ def annotation_taxonomy():
     return resp
 
 
-@app.route('/task', methods=['GET'])
+@app.route('/api/v0.1/task', methods=['GET'])
 def next_task():
     """
     To fetch data at this endpoint:
 
     $ curl -X GET localhost:8080/task
     """
-    audio_url = "http://localhost:8080/audio/{}"
+    audio_url = "http://localhost:8080/api/v0.1/audio/{}"
 
     db = pybackend.database.Database(
         project_id=app.config['cloud']['project_id'],

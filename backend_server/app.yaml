@@ -1,4 +1,6 @@
 # Necessary for AppEngine deployment.
+# First, install deps into the lib directory
+#   $ pip install .[appengine] -t lib
 
 runtime: python27
 api_version: 1

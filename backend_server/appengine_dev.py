@@ -8,7 +8,11 @@ Deploying to AppEngine
   $ pip install .[appengine] -t lib
 
 2. Deploy to AppEngine
+  # py2.7
   $ appcfg.py -A <PROJECT_ID> -V <version> update appengine.yaml
+
+  # py2.7/3.4 flex, can only be deployed in US?
+  $ gcloud app deploy -v v1
 
 Endpoints
 ---------
@@ -17,7 +21,7 @@ Endpoints
   - /annotation/submit : POST
   - /annotation/taxonomy : GET
 """
-
+from __future__ import print_function
 import argparse
 import datetime
 from flask import Flask, request, Response
@@ -34,7 +38,7 @@ import cloudstorage as gcs
 from google.appengine.api import app_identity
 
 # import pybackend.database
-# import pybackend.storage
+import pybackend.storage
 import pybackend.utils
 
 
@@ -43,16 +47,18 @@ app = Flask(__name__)
 
 # Set the cloud backend
 # TODO: This should be controlled by `app.yaml`, right?
-CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
+CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'appengine_config.json')
 app.config['cloud'] = json.load(open(CLOUD_CONFIG))
 
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
 
+# Python 2.7 doesn't ship with `.json`?
+mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 
 @app.route('/', methods=['GET'])
 def index():
-    return "we on"
+    return "we on" + '\n\t-'.join(os.listdir('.'))
 
 
 @app.route('/api/v0.1/audio', methods=['POST'])
@@ -73,30 +79,32 @@ def audio_upload():
         return 'Filetype not supported.', 400
 
     bytestring = audio_data.stream.read()
+    app.logger.info("Uploaded data: type={}, len={}"
+                    .format(type(bytestring), len(bytestring)))
 
-    # Copy to cloud storage
-    # store = pybackend.storage.Storage(
-    #     project_id=app.config['cloud']['project_id'],
-    #     **app.config['cloud']['storage'])
+    # Copy to AppEngine storage
+    store = pybackend.storage.Storage(
+        project_id=app.config['cloud']['project_id'],
+        **app.config['cloud']['storage'])
 
-    # uri = str(pybackend.utils.uuid(bytestring))
-    # filepath = os.path.extsep.join([uri, file_ext])
-    # store.upload(bytestring, filepath)
+    uri = str(pybackend.utils.uuid(bytestring))
+    filepath = os.path.extsep.join([uri, file_ext])
+    store.upload(bytestring, filepath)
 
-    # # Index in datastore
-    # # Keep things like extension, storage platform, mimetype, etc.
+    # Index in datastore
+    # Keep things like extension, storage platform, mimetype, etc.
     # dbase = pybackend.database.Database(
     #     project_id=app.config['cloud']['project_id'],
     #     **app.config['cloud']['database'])
-    # record = dict(filepath=filepath,
-    #               created=str(datetime.datetime.now()))
+    record = dict(filepath=filepath,
+                  created=str(datetime.datetime.now()))
     # dbase.put(uri, record)
     # record.update(
     #     uri=uri,
     #     message="Received {} bytes of data.".format(len(bytestring)))
 
-    # resp = Response(json.dumps(record), status=200,
-    #                 mimetype=mimetypes.types_map[".json"])
+    resp = Response(json.dumps(record), status=200,
+                    mimetype=mimetypes.types_map[".json"])
     resp.headers['Link'] = SOURCE
     return resp
 
@@ -122,17 +130,17 @@ def audio_download(uri):
     #         status=404)
 
     # else:
-    #     store = pybackend.storage.Storage(
-    #         project_id=app.config['cloud']['project_id'],
-    #         **app.config['cloud']['storage'])
+    store = pybackend.storage.Storage(
+        project_id=app.config['cloud']['project_id'],
+        **app.config['cloud']['storage'])
 
-    #     data = store.download(entity['filepath'])
-    #     app.logger.debug("Returning {} bytes".format(len(data)))
+    data = store.download(uri)
+    app.logger.debug("Returning {} bytes".format(len(data)))
 
-    #     resp = send_file(
-    #         io.BytesIO(data),
-    #         attachment_filename=entity['filepath'],
-    #         mimetype=pybackend.utils.mimetype_for_file(entity['filepath']))
+    resp = send_file(
+        io.BytesIO(data),
+        attachment_filename=uri,
+        mimetype=mimetypes.types_map[".json"])
 
     resp.headers['Link'] = SOURCE
     return resp
@@ -161,7 +169,7 @@ def annotation_submit():
                                        'only accepts application/json'))
 
     resp = Response(data, status=status,
-                    mimetype=mimetypes.guess_type("x.json")[0])
+                    mimetype=mimetypes.types_map[".json"])
     resp.headers['Link'] = SOURCE
     return resp
 
@@ -190,58 +198,7 @@ def annotation_taxonomy():
     return resp
 
 
-# AppEngine Hacks
-my_default_retry_params = gcs.RetryParams(initial_delay=0.2,
-                                          max_delay=5.0,
-                                          backoff_factor=2,
-                                          max_retry_period=15)
-gcs.set_default_retry_params(my_default_retry_params)
-
-
-@app.route('/api/v0.1/bucket', methods=['POST'])
-def get_bucket():
-    bucket_name = os.environ.get('BUCKET_NAME',
-                                 app_identity.get_default_gcs_bucket_name())
-
-    bucket = '/' + bucket_name
-    filename = bucket + '/' + request.json['filename']
-
-    write_retry_params = gcs.RetryParams(backoff_factor=1.1)
-    gcs_file = gcs.open(filename,
-                        'w',
-                        content_type='text/plain',
-                        options={'x-goog-meta-foo': 'foo',
-                                 'x-goog-meta-bar': 'bar'},
-                        retry_params=write_retry_params)
-    data = 'abcde\n' + 'f'*1024*4 + '\n'
-    gcs_file.write(data)
-    gcs_file.close()
-    return "Wrote {} characters.".format(data)
-
-
 @app.errorhandler(500)
 def server_error(e):
     logging.exception('An error occurred during a request.')
     return 'An internal error occurred.', 500
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--port", type=int, default=8080,
-        help="Port on which to serve.")
-    parser.add_argument(
-        "--local",
-        action='store_true', help="Use local backend services.")
-    parser.add_argument(
-        "--debug",
-        action='store_true',
-        help="Run the Flask application in debug mode.")
-
-    args = parser.parse_args()
-
-    if args.local:
-        config = os.path.join(os.path.dirname(__file__), 'local_config.json')
-        app.config['cloud'] = json.load(open(config))
-
-    app.run(debug=args.debug, port=args.port)

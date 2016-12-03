@@ -11,12 +11,32 @@ Example
 b"hello darkness my old friend"
 """
 
-from gcloud import storage
 import io
 import logging
 import os
+import warnings
 
-from . import GCLOUD, LOCAL
+from . import APPENGINE, GCLOUD, LOCAL
+
+# GCloud Backend
+try:
+    from gcloud import storage
+except ImportError:
+    warnings.warn("backend:{} unavailable".format(GCLOUD))
+    # TODO: This is a punt on fixing the symbol table below. Perhaps a more
+    #   "correct" solution is to properly abstract the gcloud datastore client,
+    #   but, meh.
+    class storage(object):
+        Client = None
+
+# AppEngine Backend
+try:
+    import cloudstorage as gcs
+    from google.appengine.api import app_identity
+except ImportError:
+    gcs = None
+    warnings.warn("backend:{} unavailable".format(APPENGINE))
+
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +121,80 @@ class LocalClient(object):
         return LocalBucket(name=name, root=self.root_dir)
 
 
+class AppEngineBlob(object):
+
+    def __init__(self, name):
+        self.name = name
+
+    def upload_from_string(self, bstream, content_type,
+                           options=None, retry_params=None):
+        """Upload data as a bytestring.
+
+        Parameters
+        ----------
+        bstream : bytes
+            Bytestring to upload.
+
+        options : dict, default=None
+            Options for the file to write, e.g.
+              `options={'x-goog-meta-foo': 'foo', 'x-goog-meta-bar': 'bar'}`
+
+        retry_params : cloudstorage.RetryParams, default=None
+            Write retry parameters; defaults to some same values.
+        """
+        retry_params = retry_params or gcs.RetryParams(initial_delay=0.2,
+                                                       max_delay=5.0,
+                                                       backoff_factor=1.1,
+                                                       max_retry_period=15)
+        options = dict() or options
+        with gcs.open(self.name, 'w', content_type=content_type,
+                      options=options, retry_params=retry_params) as fp:
+            fp.write(bstream)
+
+    def download_as_string(self, retry_params=None):
+        """Upload data as a bytestring.
+
+        Returns
+        -------
+        bstream : bytes
+            Bytestring format of the data.
+        """
+        retry_params = retry_params or gcs.RetryParams(initial_delay=0.2,
+                                                       max_delay=5.0,
+                                                       backoff_factor=1.1,
+                                                       max_retry_period=15)
+
+        with gcs.open(self.name, 'r', retry_params=retry_params) as fp:
+            fdata = fp.read()
+        return fdata
+
+
+class AppEngineBucket(object):
+    def __init__(self, name):
+        self.name = '/' + name.strip("/")
+
+    def blob(self, key):
+        return AppEngineBlob(os.path.join(self.name, key))
+
+    def get_blob(self, key):
+        return self.blob(key)
+
+
+class AppEngineClient(object):
+
+    def __init__(self, **kwargs):
+        pass
+
+    def get_bucket(self, name=None):
+        if name is None:
+            name = os.environ.get('BUCKET_NAME',
+                                  app_identity.get_default_gcs_bucket_name())
+
+        return AppEngineBucket(name)
+
+
 BACKENDS = {
+    APPENGINE: AppEngineClient,
     GCLOUD: storage.Client,
     LOCAL: LocalClient
 }

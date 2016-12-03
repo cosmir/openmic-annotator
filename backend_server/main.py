@@ -218,7 +218,7 @@ def next_task():
     random_uri = random.choice(list(db.keys()))
 
     task = dict(feedback="none",
-                visualization='spectrogram',
+                visualization=random.choice(['waveform', 'spectrogram']),
                 proximityTag=[],
                 annotationTag=get_taxonomy(),
                 url=audio_url.format(random_uri),

@@ -189,7 +189,7 @@ class AppEngineClient(object):
         if name is None:
             name = os.environ.get('BUCKET_NAME',
                                   app_identity.get_default_gcs_bucket_name())
-
+        # TODO: Should probably test / make the bucket here?
         return AppEngineBucket(name)
 
 

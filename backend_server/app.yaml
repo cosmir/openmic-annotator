@@ -1,7 +1,21 @@
+# Necessary for AppEngine deployment.
+
 runtime: python27
 api_version: 1
 threadsafe: true
 
 handlers:
 - url: /.*
-  script: main.app
+  script: appengine_dev.app
+
+libraries:
+- name: ssl
+  version: latest
+
+skip_files:
+- google-cloud-sdk
+- lib/gapic*
+- lib/gunicorn*
+- lib/grpc*
+- lib/google*
+- ^.*\.pyc$

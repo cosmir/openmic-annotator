@@ -68,7 +68,7 @@ to need it.
 
 ```
 $ cd backend_server
-$ pip install -t lib -r requirements/setup/requirements_dev.txt
+$ pip install . -t lib
 $ appcfg.py -A <PROJECT_ID> -V v1 update .
 ```
 

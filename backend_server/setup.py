@@ -40,6 +40,7 @@ setup(
         'six >= 1.3'
     ],
     extras_require={
-        'tests' : ['pytest', 'pytest-cov']
+        'tests' : ['pytest', 'pytest-cov'],
+        'appengine': ['GoogleAppEngineCloudStorageClient']
     }
 )

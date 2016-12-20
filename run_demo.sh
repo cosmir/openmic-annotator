@@ -19,7 +19,8 @@ HTTP_PID=$!
 sleep 1s
 # Wait
 echo "\n\nAnnotator serving at: http://localhost:8000/docs/annotator.html"
-read  -n 1 -p " >> Press any key to exit:\n\n"
+echo "NOTE: Use a private / incognito session to avoid weird cache behavior."
+read  -n 1 -p " >> Press any key to exit."
 
 # Clean-up
 kill $CMS_PID;

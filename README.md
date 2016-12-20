@@ -52,7 +52,7 @@ Here is a rough projection of the timeline for progress on the Open-MIC project,
 The easiest way to get started is to run the demo at the commandline:
 
 ```
-   $ ./run_demo.sh
+   $ ./demo.py
 ```
 
 This will start the backend server (CMS), upload a few audio files, and begin serving the audio annotation tool locally. By default this will appear at [http://localhost:8000/docs/annotator.html](http://localhost:8000/docs/annotator.html).

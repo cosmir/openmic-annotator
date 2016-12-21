@@ -6,7 +6,7 @@ Starting Locally
 ----------------
 You have two options:
 
-  $ python main.py --local --debug
+  $ python main.py --port 8080 --local --debug
 
 Or, to use GCP backend by default:
 

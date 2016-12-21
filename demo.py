@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """Run a local demo of the server-annotator system.
 
 Performs the following:
@@ -13,16 +13,34 @@ caching behavior, which can cause the web app to use stale source files.
 from __future__ import print_function
 
 import os
+import requests
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 import signal
 import subprocess
-import time
+
+
+def kill(*proccesses):
+    for proc in proccesses:
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
 
 
 def run():
     server = subprocess.Popen(['python', 'backend_server/main.py', '--port',
                                '8080', '--local', '--debug'],
                               stdout=subprocess.PIPE, preexec_fn=os.setsid)
-    time.sleep(4)
+
+    # Test that the server is on; will raise an exception after enough attempts
+    session = requests.Session()
+    adapter = HTTPAdapter(max_retries=Retry(total=8, backoff_factor=0.1))
+    session.mount('http://', adapter)
+    try:
+        session.get('http://localhost:8080')
+    except requests.exceptions.ConnectionError:
+        kill(server)
+        raise EnvironmentError(
+            "Unable to confirm that the server started successfully.")
+
     fnames = ["267508__mickleness__3nf.ogg",
               "345515__furbyguy__strings-piano.ogg"]
     for fn in fnames:
@@ -33,13 +51,10 @@ def run():
 
     webapp = subprocess.Popen(['python', '-m', 'http.server'],
                               stdout=subprocess.PIPE, preexec_fn=os.setsid)
+
     print("Now serving at: http://localhost:8000/docs/annotator.html")
-    try:
-        input("Press return to exit.")
-    except:
-        pass
-    os.killpg(os.getpgid(server.pid), signal.SIGTERM)
-    os.killpg(os.getpgid(webapp.pid), signal.SIGTERM)
+    input("Press return to exit.")
+    kill(server, webapp)
 
 
 if __name__ == '__main__':

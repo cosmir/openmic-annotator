@@ -96,21 +96,11 @@ def test_LocalClient_delete(json_file):
     assert db.get(key) is None
 
 
-@pytest.yield_fixture()
-def dummy_app():
-    app = flask.Flask(__name__)
-    app.config.update(SECRET_KEY='abcdef')
-    app.debug = True
-    app.testing = True
-    with app.test_request_context():
-        yield app
-
-
 def test_GClient___init__():
     assert D.GClient('my-proj') is not None
 
 
-def test_GClient__client(dummy_app):
+def test_GClient__client():
     db = D.GClient('my-proj')
     assert db._client is not None
 

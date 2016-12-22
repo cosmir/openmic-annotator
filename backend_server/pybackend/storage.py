@@ -3,7 +3,7 @@
 Example
 -------
 >>> import pybackend.storage as S
->>> store = S.Storage(name='blah-blah-5678', project_id='my-project-3',
+>>> store = S.Storage(name='blah-blah-5678', project='my-project-3',
                       backend=S.LOCAL, local_dir="tmp")
 >>> key = "my_song"
 >>> store.upload(b"never gonna give you up...", key)
@@ -17,7 +17,6 @@ import os
 import warnings
 
 from . import GCLOUD, LOCAL
-
 
 logger = logging.getLogger(__name__)
 
@@ -83,18 +82,18 @@ class LocalBucket(LocalData):
 
 class LocalClient(object):
 
-    def __init__(self, project_id, root_dir):
+    def __init__(self, project, root_dir):
         """Create a local storage client.
 
         Paratmeters
         -----------
-        project_id : str
+        project : str
             Unique identifier for the owner of the client.
 
         root_dir : str, default=None
             A directory on disk for writing binary data.
         """
-        self.project_id = project_id
+        self.project = project
         self.root_dir = _makedirs(root_dir)
 
     def get_bucket(self, name):
@@ -110,7 +109,7 @@ BACKENDS = {
 
 class Storage(object):
 
-    def __init__(self, name, project_id, backend=GCLOUD,
+    def __init__(self, name, project, backend=GCLOUD,
                  local_dir=None):
         """Create a storage object.
 
@@ -119,7 +118,7 @@ class Storage(object):
         name : str
             Unique name for the bucket to use, persistent across instances.
 
-        project_id : str
+        project : str
             Unique identifier for the owner of this storage object.
 
         backend : str, default='gcloud'
@@ -133,36 +132,34 @@ class Storage(object):
             raise ValueError(
                 "`local_dir` must be given if backend is '{}'".format(LOCAL))
         self.name = name
-        self.project_id = project_id
+        self.project = project
         self._backend = backend
-        self._client_args = (project_id,)
-        self._client_kwargs = dict()
+        self._client_kwargs = dict(project=project)
         if self._backend == LOCAL:
             self._client_kwargs.update(
                 root_dir=os.path.abspath(os.path.expanduser(local_dir)))
 
     @property
     def client(self):
-        return BACKENDS[self._backend](*self._client_args,
-                                       **self._client_kwargs)
+        return BACKENDS[self._backend](**self._client_kwargs)
 
-    def upload(self, fdata, key):
-        """Upload a local file to GCS.
+    def put(self, key, fdata):
+        """Put filedata into GCS.
 
         Parameters
         ----------
-        fdata : str
-            File's bytestream.
-
         key : str
             Key for writing the file data.
+
+        fdata : str
+            File's bytestream.
         """
         logger.debug("Uploading {} bytes to {}.".format(len(fdata), key))
         bucket = self.client.get_bucket(self.name)
         blob = bucket.blob(key)
         blob.upload_from_string(fdata, content_type="application/octet-stream")
 
-    def download(self, key):
+    def get(self, key):
         """Retrieve binary data for the given key.
 
         Parameters

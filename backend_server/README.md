@@ -83,8 +83,8 @@ From here, the app should be deployed to the following URL:
 You can then poke the endpoints as one would expect:
 
 ```
-  $ curl -X GET http://<PROJECT_ID>.appspot.com/annotation/taxonomy
-  $ curl -F "audio=@some_file.mp3" http://<PROJECT_ID>/audio
+  $ curl -X GET http://<PROJECT_ID>.appspot.com/api/v0.1/annotation/taxonomy
+  $ curl -F "audio=@some_file.mp3" http://<PROJECT_ID>/api/v0.1/audio
 ```
 
 

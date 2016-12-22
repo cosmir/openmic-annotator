@@ -9,5 +9,9 @@
         "backend": "local",
         "filepath": "tmp/database-file.json",
         "mode": "a"
+    },
+    "annotator": {
+        "scheme": "http",
+        "netloc": "localhost:8080"
     }
 }

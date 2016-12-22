@@ -44,8 +44,7 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 
 # Set the cloud backend
-# TODO: This should be controlled by `app.yaml`, right?
-CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
+CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), '.config.json')
 app.config['cloud'] = json.load(open(CLOUD_CONFIG))
 
 SOURCE = "https://cosmir.github.io/open-mic/"

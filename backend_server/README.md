@@ -24,7 +24,6 @@ Next, install dependencies in a directory local to this project, e.g. `lib`. App
 $ pip install -r requirements/setup/requirements_dev.txt -t lib
 ```
 
-
 ## Testing
 
 Having taken care of dependencies, you should be able to run the test suite:
@@ -35,6 +34,13 @@ $ py.test -v .
 
 All tests should pass; halt everything if this is not the case. In all likelihood, failure is the result of a broken / missing dependency, but please create a new issue (with a console log and steps to reproduce) if you believe otherwise.
 
+**Note**: The underlying `google-cloud` library doesn't have the best testing interfaces at the moment; this library is under active development, and hopefully we'll be able to stub out this testing soon. In the meantime, testing is achieved by pinging a live GCP project. To do this, pass a test project flag at the command line:
+
+```
+$ TEST_GCP_PROJECT=<YOUR_PROJECT_ID> py.test -v --cov=pybackend tests
+```
+
+All affected tests are skipped in the absence of this environment variable.
 
 ## Using the CAS machinery
 
@@ -58,18 +64,14 @@ $ curl -F "audio=@some_file.mp3" localhost:8080/audio/upload
 
 ### Deploying to App Engine
 
-`TODO(ejhumphrey):` Is it possible to have pre-deployment testing hooks? If so, that should be documented here. **Update:** Survey says [yes](https://github.com/GoogleCloudPlatform/continuous-deployment-demo/blob/master/.travis.yml).
-
 For the time being, you will need to create your own App Engine project. To do
 so, [follow the directions here](https://console.cloud.google.com/freetrial?redirectPath=/start/appengine).
 
 Once this is configured, make note of your `PROJECT_ID`, because you're going
-to need it.
+to need to pass it through to the deployment script.
 
 ```
-$ cd backend_server
-$ pip install . -t lib
-$ appcfg.py -A <PROJECT_ID> -V v1 update .
+$ ./deploy.sh <PROJECT_ID>
 ```
 
 From here, the app should be deployed to the following URL:
@@ -82,7 +84,7 @@ You can then poke the endpoints as one would expect:
 
 ```
   $ curl -X GET http://<PROJECT_ID>.appspot.com/annotation/taxonomy
-  $ curl -F "audio=@some_file.mp3" http://<PROJECT_ID>/audio/upload
+  $ curl -F "audio=@some_file.mp3" http://<PROJECT_ID>/audio
 ```
 
 

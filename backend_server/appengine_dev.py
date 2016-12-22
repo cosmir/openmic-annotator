@@ -57,7 +57,7 @@ mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 
 @app.route('/', methods=['GET'])
 def index():
-    return "we on" + '\n\t-'.join(os.listdir('.'))
+    return "we on"
 
 
 @app.route('/api/v0.1/audio', methods=['POST'])
@@ -81,7 +81,7 @@ def audio_upload():
     app.logger.info("Uploaded data: type={}, len={}"
                     .format(type(bytestring), len(bytestring)))
 
-    # Copy to AppEngine storage
+    # Copy to storage
     store = pybackend.storage.Storage(
         project_id=app.config['cloud']['project_id'],
         **app.config['cloud']['storage'])

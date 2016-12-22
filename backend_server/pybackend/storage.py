@@ -135,14 +135,16 @@ class Storage(object):
         self.name = name
         self.project_id = project_id
         self._backend = backend
-        self._backend_kwargs = dict(project_id=project_id)
+        self._client_args = (project_id,)
+        self._client_kwargs = dict()
         if self._backend == LOCAL:
-            self._backend_kwargs.update(
+            self._client_kwargs.update(
                 root_dir=os.path.abspath(os.path.expanduser(local_dir)))
 
     @property
     def client(self):
-        return BACKENDS[self._backend](**self._backend_kwargs)
+        return BACKENDS[self._backend](*self._client_args,
+                                       **self._client_kwargs)
 
     def upload(self, fdata, key):
         """Upload a local file to GCS.

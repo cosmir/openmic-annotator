@@ -41,10 +41,10 @@ def test_audio_get(app):
     data = dict(audio=(BytesIO(content), 'blah.wav'))
     r = app.post('/api/v0.1/audio', data=data)
     assert r.status_code == requests.status_codes.codes.OK
-    uri = json.loads(r.data.decode('utf-8'))['uri']
+    gid = json.loads(r.data.decode('utf-8'))['gid']
 
     # Now let's go looking for it
-    r = app.get('/api/v0.1/audio/{}'.format(uri))
+    r = app.get('/api/v0.1/audio/{}'.format(gid))
     assert r.status_code == requests.status_codes.codes.OK
     assert r.data == content
 

@@ -34,6 +34,7 @@ import os
 
 import pybackend.database
 import pybackend.storage
+import pybackend.urilib
 import pybackend.utils
 
 
@@ -42,7 +43,7 @@ app = Flask(__name__)
 
 # Set the cloud backend
 # TODO: This should be controlled by `app.yaml`, right?
-CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
+CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), '.config.json')
 app.config['cloud'] = json.load(open(CLOUD_CONFIG))
 
 SOURCE = "https://cosmir.github.io/open-mic/"
@@ -70,24 +71,25 @@ def audio_upload():
 
     # Copy to cloud storage
     store = pybackend.storage.Storage(
-        project_id=app.config['cloud']['project_id'],
+        project=app.config['cloud']['project'],
         **app.config['cloud']['storage'])
 
-    uri = str(pybackend.utils.uuid(bytestring))
-    filepath = os.path.extsep.join([uri, file_ext])
-    store.upload(bytestring, filepath)
+    gid = str(pybackend.utils.uuid(bytestring))
+    store.put(gid, bytestring)
 
     # Index in datastore
     # Keep things like extension, storage platform, mimetype, etc.
     dbase = pybackend.database.Database(
-        project_id=app.config['cloud']['project_id'],
+        project=app.config['cloud']['project'],
         **app.config['cloud']['database'])
-    record = dict(filepath=filepath,
+
+    uri = pybackend.urilib.join('audio', gid)
+    record = dict(gid=gid, file_ext=file_ext,
                   created=str(datetime.datetime.now()))
+
     dbase.put(uri, record)
     record.update(
-        uri=uri,
-        message="Received {} bytes of data.".format(len(bytestring)))
+        uri=uri, message="Received {} bytes of data.".format(len(bytestring)))
 
     resp = Response(json.dumps(record), status=200,
                     mimetype=mimetypes.types_map[".json"])
@@ -95,17 +97,18 @@ def audio_upload():
     return resp
 
 
-@app.route('/api/v0.1/audio/<uri>', methods=['GET'])
-def audio_download(uri):
+@app.route('/api/v0.1/audio/<gid>', methods=['GET'])
+def audio_download(gid):
     """
     To GET responses from this endpoint:
 
     $ curl -XGET localhost:8080/audio/bbdde322-c604-4753-b828-9fe8addf17b9
     """
-
     dbase = pybackend.database.Database(
-        project_id=app.config['cloud']['project_id'],
+        project=app.config['cloud']['project'],
         **app.config['cloud']['database'])
+
+    uri = pybackend.urilib.join('audio', gid)
 
     entity = dbase.get(uri)
     if entity is None:
@@ -117,16 +120,17 @@ def audio_download(uri):
 
     else:
         store = pybackend.storage.Storage(
-            project_id=app.config['cloud']['project_id'],
+            project=app.config['cloud']['project'],
             **app.config['cloud']['storage'])
 
-        data = store.download(entity['filepath'])
+        data = store.get(entity['gid'])
         app.logger.debug("Returning {} bytes".format(len(data)))
 
+        filename = os.path.extsep.join([entity['gid'], entity['file_ext']])
         resp = send_file(
             io.BytesIO(data),
-            attachment_filename=entity['filepath'],
-            mimetype=pybackend.utils.mimetype_for_file(entity['filepath']))
+            attachment_filename=filename,
+            mimetype=pybackend.utils.mimetype_for_file(filename))
 
     resp.headers['Link'] = SOURCE
     return resp

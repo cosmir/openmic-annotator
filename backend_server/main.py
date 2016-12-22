@@ -219,20 +219,20 @@ def next_task():
 
     $ curl -X GET localhost:8080/task
     """
-    # TODO: How can we generalize the host:port?
-    audio_url = "http://localhost:8080/api/v0.1/audio/{}"
-
     db = pybackend.database.Database(
         project=app.config['cloud']['project'],
         **app.config['cloud']['database'])
 
     random_uri = random.choice(list(db.uris(kind='audio')))
+    audio_url = "{scheme}://{netloc}/api/v0.1/audio/{gid}".format(
+        gid=pybackend.urilib.split(random_uri)[1],
+        **app.config['cloud']['annotator'])
 
     task = dict(feedback="none",
                 visualization=random.choice(['waveform', 'spectrogram']),
                 proximityTag=[],
                 annotationTag=get_taxonomy(),
-                url=audio_url.format(pybackend.urilib.split(random_uri)[1]),
+                url=audio_url,
                 numRecordings='?',
                 recordingIndex=random_uri,
                 tutorialVideoURL="https://www.youtube.com/embed/Bg8-83heFRM",

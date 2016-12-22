@@ -232,7 +232,7 @@ def next_task():
                 visualization=random.choice(['waveform', 'spectrogram']),
                 proximityTag=[],
                 annotationTag=get_taxonomy(),
-                url=audio_url.format(random_uri),
+                url=audio_url.format(pybackend.urilib.split(random_uri)[1]),
                 numRecordings='?',
                 recordingIndex=random_uri,
                 tutorialVideoURL="https://www.youtube.com/embed/Bg8-83heFRM",

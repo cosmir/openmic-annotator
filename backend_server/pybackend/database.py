@@ -14,7 +14,7 @@ Example
 """
 
 import json
-from gcloud import datastore
+from google.cloud import datastore
 import os
 
 from . import GCLOUD, LOCAL

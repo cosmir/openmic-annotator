@@ -2,18 +2,16 @@
 # First, install deps into the lib directory
 #   $ pip install .[appengine] -t lib
 
-# Python3 (flex) environment only supported in US datacenters :o/
-runtime: python27
-api_version: 1
-threadsafe: true
+runtime: python
+env: flex
+runtime_config:
+  python_version: 3
+
+entrypoint: gunicorn -b :$PORT appengine_dev:app
 
 handlers:
 - url: /.*
   script: appengine_dev.app
-
-libraries:
-- name: ssl
-  version: latest
 
 skip_files:
 - ^.*\.pyc$

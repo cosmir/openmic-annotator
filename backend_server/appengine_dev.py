@@ -22,6 +22,7 @@ Endpoints
   - /annotation/taxonomy : GET
 """
 from __future__ import print_function
+
 import argparse
 import datetime
 from flask import Flask, request, Response
@@ -33,11 +34,8 @@ import mimetypes
 import requests
 import os
 
-from google.appengine.ext import ndb
-import cloudstorage as gcs
-from google.appengine.api import app_identity
 
-# import pybackend.database
+import pybackend.database
 import pybackend.storage
 import pybackend.utils
 
@@ -47,7 +45,7 @@ app = Flask(__name__)
 
 # Set the cloud backend
 # TODO: This should be controlled by `app.yaml`, right?
-CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'appengine_config.json')
+CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
 app.config['cloud'] = json.load(open(CLOUD_CONFIG))
 
 SOURCE = "https://cosmir.github.io/open-mic/"
@@ -55,6 +53,7 @@ AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
 
 # Python 2.7 doesn't ship with `.json`?
 mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
+
 
 @app.route('/', methods=['GET'])
 def index():

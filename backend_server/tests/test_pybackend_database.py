@@ -100,8 +100,12 @@ def test_GClient___init__():
     assert D.GClient('my-proj') is not None
 
 
+@pytest.mark.skipif(
+    TEST_GCP_PROJECT is None,
+    reason="Environment variable `TEST_GCP_PROJECT` is unset; "
+           "unable to test DataStore")
 def test_GClient__client():
-    db = D.GClient('my-proj')
+    db = D.GClient(TEST_GCP_PROJECT)
     assert db._client is not None
 
 

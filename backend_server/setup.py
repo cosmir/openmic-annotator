@@ -31,6 +31,7 @@ setup(
     install_requires=[
         'audioread >= 2.0.0',
         'Flask >= 0.11.1',
+        'Flask-Cors >= 3.0.2',
         'requests',
         'google-cloud >= 0.22.0',
         'six >= 1.3'

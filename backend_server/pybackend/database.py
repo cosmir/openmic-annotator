@@ -81,6 +81,7 @@ class LocalClient():
 
     def get(self, uri):
         """Get the record for the given URI."""
+        urilib.validate(uri)
         return self._collection.get(uri)
 
     def put(self, uri, record, atomic=False):
@@ -94,6 +95,7 @@ class LocalClient():
         record : dict
             Dictionary object to write.
         """
+        urilib.validate(uri)
         # What happens if `uri` is in self._collection?
         self._collection[uri] = record
         if self.atomic or atomic:
@@ -107,8 +109,26 @@ class LocalClient():
         uri : str
             URI to delete. Passes quietly if URI does not exist.
         """
+        urilib.validate(uri)
         if uri in self._collection:
             self._collection.pop(uri)
+
+    def uris(self, kind=None):
+        """Returns an iterator over the URIs in the Client.
+
+        Parameters
+        ----------
+        kind : str, default=None
+            Optionally filter over the URI kind in the database.
+
+        Yields
+        ------
+        uri : str
+            A URI in the collection.
+        """
+        for uri in self._collection.keys():
+            if kind is None or kind == urilib.split(uri)[0]:
+                yield uri
 
 
 class GClient(object):
@@ -155,6 +175,29 @@ class GClient(object):
             key, exclude_from_indexes=exclude_from_indexes)
         entity.update(record)
         self._client.put(entity)
+
+    def uris(self, kind=None):
+        """Iterator over the URIs in the database.
+
+        Parameters
+        ----------
+        kind : str, default=None
+            Optionally filter over the URI kind in the database.
+
+        Yields
+        ------
+        uri : str
+            A URI in the collection.
+        """
+        kwargs = dict()
+        if kind:
+            kwargs.update(kind=kind)
+        query = self._client.query(**kwargs)
+
+        # Sets a filter in-place on the query to return keys.
+        query.keys_only()
+        for v in query.fetch():
+            yield urilib.join(v.kind, v.key.name)
 
 
 BACKENDS = {

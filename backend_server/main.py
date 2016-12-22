@@ -6,7 +6,7 @@ Starting Locally
 ----------------
 You have two options:
 
-  $ python main.py --local --debug
+  $ python main.py --port 8080 --local --debug
 
 Or, to use GCP backend by default:
 
@@ -25,10 +25,12 @@ import argparse
 import datetime
 from flask import Flask, request, Response
 from flask import send_file
+from flask_cors import CORS
 import io
 import json
 import logging
 import mimetypes
+import random
 import requests
 import os
 
@@ -40,6 +42,11 @@ import pybackend.utils
 
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
+
+# TODO: One of the following
+#  - Whitelist localhost and `SOURCE` below.
+#  - Use AppEngine for delivery of the annotator HTML.
+CORS(app)
 
 # Set the cloud backend
 # TODO: This should be controlled by `app.yaml`, right?
@@ -150,14 +157,21 @@ def annotation_submit():
         -X POST localhost:8080/annotation/submit \
         -d '{"message":"Hello Data"}'
     """
-
     if request.headers['Content-Type'] == 'application/json':
         app.logger.info("Received Annotation:\n{}"
                         .format(json.dumps(request.json, indent=2)))
-        # obj = json.loads(request.data)
+        # Do a thing with the annotation
+        # Return some progress stats?
         data = json.dumps(dict(message='Success!'))
         status = 200
 
+        db = pybackend.database.Database(
+            project=app.config['cloud']['project'],
+            **app.config['cloud']['database'])
+        gid = str(pybackend.utils.uuid(json.dumps(request.json)))
+        uri = pybackend.urilib.join('annotation', gid)
+        record = dict(created=str(datetime.datetime.now()), **request.json)
+        db.put(uri, record)
     else:
         status = 400
         data = json.dumps(dict(message='Invalid Content-Type; '
@@ -169,26 +183,63 @@ def annotation_submit():
     return resp
 
 
+def get_taxonomy():
+    tax_url = ("https://raw.githubusercontent.com/cosmir/open-mic/"
+               "ejh_20161119_iss8_webannot/data/instrument_taxonomy_v0.json")
+    res = requests.get(tax_url)
+    values = []
+    try:
+        schema = res.json()
+        values = schema['tag_open_mic_instruments']['value']['enum']
+    except BaseException as derp:
+        app.logger.error("Failed loading taxonomy: {}".format(derp))
+
+    return values
+
+
 @app.route('/api/v0.1/annotation/taxonomy', methods=['GET'])
 def annotation_taxonomy():
     """
     To fetch data at this endpoint:
 
     $ curl -X GET localhost:8080/annotation/taxonomy
-
-    TODO: Clean this up per @alastair's feedback.
     """
-    data = json.dumps(dict(message='Resource not found'))
-    status = 404
+    instruments = get_taxonomy()
+    status = 200 if instruments else 400
 
-    tax_url = ("https://raw.githubusercontent.com/marl/jams/master/jams/"
-               "schemata/namespaces/tag/medleydb_instruments.json")
-    res = requests.get(tax_url)
-    if res.text:
-        data = json.loads(res.text)
-        status = 200
+    resp = Response(json.dumps(instruments), status=status)
+    resp.headers['Link'] = SOURCE
+    return resp
 
-    resp = Response(data, status=status)
+
+@app.route('/api/v0.1/task', methods=['GET'])
+def next_task():
+    """
+    To fetch data at this endpoint:
+
+    $ curl -X GET localhost:8080/task
+    """
+    # TODO: How can we generalize the host:port?
+    audio_url = "http://localhost:8080/api/v0.1/audio/{}"
+
+    db = pybackend.database.Database(
+        project=app.config['cloud']['project'],
+        **app.config['cloud']['database'])
+
+    random_uri = random.choice(list(db.uris(kind='audio')))
+
+    task = dict(feedback="none",
+                visualization=random.choice(['waveform', 'spectrogram']),
+                proximityTag=[],
+                annotationTag=get_taxonomy(),
+                url=audio_url.format(random_uri),
+                numRecordings='?',
+                recordingIndex=random_uri,
+                tutorialVideoURL="https://www.youtube.com/embed/Bg8-83heFRM",
+                alwaysShowTags=True)
+    data = json.dumps(dict(task=task))
+    app.logger.debug("Returning:\n{}".format(data))
+    resp = Response(data)
     resp.headers['Link'] = SOURCE
     return resp
 

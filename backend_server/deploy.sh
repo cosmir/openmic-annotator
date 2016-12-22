@@ -12,8 +12,8 @@ sed "s/<YOUR_PROJECT_ID>/$1/" gcloud_config.json > .config.json
 py.test tests
 echo "All tests pass -- deploying"
 
-# LIBDIR=lib
-# rm -rf $LIBDIR
-# pip install . -t $LIBDIR
+LIBDIR=lib
+rm -rf $LIBDIR
+pip install . -t $LIBDIR
 
-# gcloud app deploy
+gcloud app deploy

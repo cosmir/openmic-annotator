@@ -3,5 +3,8 @@
     "storage": {
         "name": "open-mic-data",
         "backend": "gcloud"
+    },
+    "database": {
+        "backend": "gcloud"
     }
 }

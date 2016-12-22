@@ -9,7 +9,8 @@ threadsafe: true
 
 handlers:
 - url: /.*
-  script: appengine_dev.app
+  script: main.app
+  secure: always
 
 libraries:
 - name: ssl

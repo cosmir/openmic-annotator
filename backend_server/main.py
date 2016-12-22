@@ -49,6 +49,9 @@ app.config['cloud'] = json.load(open(CLOUD_CONFIG))
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
 
+# Python 2.7 doesn't ship with `.json`?
+mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
+
 
 @app.route('/api/v0.1/audio', methods=['POST'])
 def audio_upload():
@@ -64,10 +67,12 @@ def audio_upload():
     audio_data = request.files['audio']
     file_ext = os.path.splitext(audio_data.filename)[-1][1:]
     if file_ext not in AUDIO_EXTENSIONS:
-        logging.exception('Attempted upload of unsupported filetype.')
+        app.logger.exception('Attempted upload of unsupported filetype.')
         return 'Filetype not supported.', 400
 
     bytestring = audio_data.stream.read()
+    app.logger.info("Uploaded data: type={}, len={}"
+                    .format(type(bytestring), len(bytestring)))
 
     # Copy to cloud storage
     store = pybackend.storage.Storage(

@@ -53,7 +53,7 @@ At this point, the endpoints should be live via localhost (default deployment is
 
 ```
 $ curl -X GET localhost:8080/annotation/taxonomy
-$ curl -F "audio=@some_file.mp3" localhost:8080/audio/upload
+$ curl -F "audio=@some_file.mp3" localhost:8080/audio
 ```
 
 ### Deploying to App Engine
@@ -82,7 +82,7 @@ You can then poke the endpoints as one would expect:
 
 ```
   $ curl -X GET http://<PROJECT_ID>.appspot.com/annotation/taxonomy
-  $ curl -F "audio=@some_file.mp3" http://<PROJECT_ID>/audio/upload
+  $ curl -F "audio=@some_file.mp3" http://<PROJECT_ID>/audio
 ```
 
 

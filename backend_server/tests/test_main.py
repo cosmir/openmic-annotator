@@ -71,3 +71,8 @@ def test_annotation_submit(app):
 def test_annotation_taxonomy(app):
     r = app.get('/api/v0.1/annotation/taxonomy')
     assert r.status_code == requests.status_codes.codes.OK
+
+
+def test_task_get(app):
+    r = app.get('/api/v0.1/task')
+    assert r.status_code == requests.status_codes.codes.OK

@@ -112,6 +112,10 @@ class LocalClient():
         if key in self._collection:
             self._collection.pop(key)
 
+    def keys(self):
+        """Returns an iterator over the keys in the Client."""
+        return self._collection.keys()
+
 
 class GClient(object):
     """Thin wrapper for gcloud's DataStore client.

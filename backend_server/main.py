@@ -35,6 +35,7 @@ import requests
 import os
 
 import pybackend.database
+import pybackend.models
 import pybackend.storage
 import pybackend.urilib
 import pybackend.utils
@@ -170,8 +171,11 @@ def annotation_submit():
             **app.config['cloud']['database'])
         gid = str(pybackend.utils.uuid(json.dumps(request.json)))
         uri = pybackend.urilib.join('annotation', gid)
-        record = dict(created=str(datetime.datetime.now()), **request.json)
-        db.put(uri, record)
+        record = pybackend.models.Record(serialized_keys=['response'])
+        record.update(created=str(datetime.datetime.now()),
+                      response=request.json,
+                      user_id='anonymous')
+        db.put(uri, record.flatten())
     else:
         status = 400
         data = json.dumps(dict(message='Invalid Content-Type; '

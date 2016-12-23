@@ -12,3 +12,14 @@ def test_utils_uuid():
     assert uuid1 == pybackend.utils.uuid(data)
     assert str(uuid1) == exp
     assert uuid1 != pybackend.utils.uuid('foobar')
+
+
+def test_check_connection():
+    assert not pybackend.utils.check_connection("http://blahblah")
+
+
+def test_mimetype_for_file():
+    fnames = ['x.json', 'x.monkey']
+    mtypes = ['application/json', 'application/octet-stream']
+    for fn, m in zip(fnames, mtypes):
+        assert pybackend.utils.mimetype_for_file(fn) == m

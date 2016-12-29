@@ -50,7 +50,6 @@ app = Flask(__name__)
 CORS(app)
 
 # Set the cloud backend
-# TODO: This should be controlled by `app.yaml`, right?
 CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), '.config.json')
 app.config['cloud'] = json.load(open(CLOUD_CONFIG))
 

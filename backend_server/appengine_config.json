@@ -1,7 +1,0 @@
-{
-    "project_id": "<YOUR_PROJECT_ID>",
-    "storage": {
-        "name": "open-mic-data",
-        "backend": "appengine"
-    }
-}

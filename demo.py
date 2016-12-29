@@ -45,9 +45,8 @@ def run():
               "345515__furbyguy__strings-piano.ogg"]
     for fn in fnames:
         fpath = os.path.abspath("./data/audio/{}".format(fn))
-        subprocess.check_output(
-            ["curl", '-F', 'audio=@{}'.format(fpath),
-             'localhost:8080/api/v0.1/audio'])
+        requests.post('http://localhost:8080/api/v0.1/audio',
+                      files=dict(audio=open(fpath, 'rb')))
 
     webapp = subprocess.Popen(['python', '-m', 'http.server'],
                               stdout=subprocess.PIPE, preexec_fn=os.setsid)

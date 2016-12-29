@@ -3,35 +3,31 @@ import json
 import pybackend.models as M
 
 
-def test_Record___init__():
-    rec = M.Record(['a', 'b'])
-    assert len(rec.serialized_keys) == 2
+def test_BaseRecord___init__():
+    rec = M.BaseRecord()
+    assert len(rec.serialized_keys) == 0
 
 
-def test_Record_flatten():
-    s = "fluflu"
-    k1 = 'a'
-    k2 = 'b'
-    rec = M.Record(serialized_keys=[k1])
-    rec[k1] = dict(x=13, y=['d', 'e', 'f'])
-    rec[k2] = s
+class DummyRecord(M.BaseRecord):
+    serialized_keys = ['a']
+
+
+def test_DummyRecord_flatten():
+    a = dict(x=13, y=['d', 'e', 'f'])
+    b = "fluflu"
+    rec = DummyRecord(a=a, b=b)
     flatrec = rec.flatten()
 
-    assert isinstance(flatrec[k1], str)
-    assert isinstance(rec[k1], dict)
-    assert flatrec[k2] == rec[k2] == s
+    assert isinstance(flatrec['a'], str)
+    assert isinstance(rec['a'], dict)
+    assert flatrec['b'] == rec['b'] == b
 
 
-def test_Record_expand():
-    s = "fluflu"
-    k1 = 'a'
-    k2 = 'b'
+def test_DummyRecord_expand():
+    a = dict(x=13, y=['d', 'e', 'f'])
+    aflat = json.dumps(a)
+    b = "fluflu"
 
-    data = dict(x=13, y=['d', 'e', 'f'])
-    sdat = json.dumps(data)
-
-    rec = M.Record(serialized_keys=[k1])
-    rec.expand(**{k1: sdat, k2: s})
-
-    assert rec[k1] == data
-    assert rec[k2] == s
+    rec = DummyRecord.from_flat(**{'a': aflat, 'b': b})
+    assert rec['a'] == a
+    assert rec['b'] == b

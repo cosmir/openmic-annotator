@@ -171,10 +171,10 @@ def annotation_submit():
             **app.config['cloud']['database'])
         gid = str(pybackend.utils.uuid(json.dumps(request.json)))
         uri = pybackend.urilib.join('annotation', gid)
-        record = pybackend.models.Record(serialized_keys=['response'])
-        record.update(created=str(datetime.datetime.now()),
-                      response=request.json,
-                      user_id='anonymous')
+        record = pybackend.models.AnnotationResponse(
+            created=str(datetime.datetime.now()),
+            response=request.json,
+            user_id='anonymous')
         db.put(uri, record.flatten())
     else:
         status = 400

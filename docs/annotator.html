@@ -69,8 +69,9 @@
     </div>
     <script>
         // Change me! Is there an easy way to config this?
-        var dataUrl = 'http://localhost:8080/api/v0.1/task';
-        var postUrl = 'http://localhost:8080/api/v0.1/annotation/submit';
+        var netloc = 'http://localhost:8080'
+        var dataUrl = netloc + '/api/v0.1/task';
+        var postUrl = netloc + '/api/v0.1/annotation/submit';
 
         $(document).ready(function(){
             $('.modal-trigger').leanModal();

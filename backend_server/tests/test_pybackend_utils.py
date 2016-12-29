@@ -16,7 +16,7 @@ def test_utils_uuid():
 
 def test_check_connection():
     assert not pybackend.utils.check_connection("http://blahblah")
-
+    assert pybackend.utils.check_connection("http://google.com")
 
 def test_mimetype_for_file():
     fnames = ['x.json', 'x.monkey']

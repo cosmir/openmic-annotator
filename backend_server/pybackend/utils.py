@@ -65,5 +65,5 @@ def mimetype_for_file(fname, strict=False):
     """
     mtype, enc = mimetypes.guess_type(fname)
     if mtype is None and not strict:
-        mtype, enc = mimetypes.guess_type('blah.bin')
+        mtype, enc = mimetypes.guess_type('foo.bin')
     return mtype

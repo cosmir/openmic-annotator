@@ -95,3 +95,20 @@ After deploying the application, you may wish to shut it down so as to not ring 
 ```
 
 Be sure to replace `<PROJECT_ID>` with the appropriate one matching the account you've configured.
+
+
+## OAuth
+
+### Google
+
+- Go to the GCP console, at https://console.cloud.google.com/, and select "API" from the menu (the infamous "hamburger" button). From the vertical menu tray on the left-hand side, select "Credentials". You can shortcut this by replacing <YOUR_PROJECT> in the following URL:
+
+```
+https://console.cloud.google.com/apis/credentials?project=<YOUR_PROJECT>
+```
+
+- Select "Create Credentials", and pick "OAuth client ID" from the pop-up menu.
+
+- Select "Web Application" and provide an appropriate name; we'll skip the origin and redirect URLs for the time being.
+
+- Copy the client ID and secret to the `google` section of the the OAuth config file, i.e. `configs/oauth.yaml`.

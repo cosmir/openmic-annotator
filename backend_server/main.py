@@ -23,9 +23,11 @@ Endpoints
 
 import argparse
 import datetime
-from flask import Flask, request, Response
+from flask import Flask, request, Response, session, redirect, url_for, jsonify
 from flask import send_file
 from flask_cors import CORS
+from flask_oauthlib.client import OAuth
+from functools import wraps
 import io
 import json
 import logging
@@ -33,6 +35,7 @@ import mimetypes
 import random
 import requests
 import os
+import yaml
 
 import pybackend.database
 import pybackend.storage
@@ -44,19 +47,117 @@ app = Flask(__name__)
 
 # TODO: One of the following
 #  - Whitelist localhost and `SOURCE` below.
-#  - Use AppEngine for delivery of the annotator HTML.
+#  - Use AppEngine for delivery of the annotator HTML?
 CORS(app)
 
-# Set the cloud backend
+# Set the different backend
 # TODO: This should be controlled by `app.yaml`, right?
 CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
 app.config['cloud'] = json.load(open(CLOUD_CONFIG))
+OAUTH_CONFIG = os.path.join(os.path.dirname(__file__), 'configs', 'oauth.yaml')
+app.config['oauth'] = yaml.load(open(OAUTH_CONFIG))
+app.secret_key = 'development'
 
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
 
+oauth = OAuth(app)
+
+oauth_handler = oauth.remote_app(
+    'google',
+    consumer_key=app.config['oauth']['google']['client_id'],
+    consumer_secret=app.config['oauth']['google']['client_secret'],
+    request_token_params={'scope': 'email'},
+    base_url='https://www.googleapis.com/oauth2/v1/',
+    request_token_url=None,
+    access_token_method='POST',
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+)
+
+
+def authenticate(f):
+    """Decorate a route as requiring authentication."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        app.logger.info(session)
+        if session.get('access_token', None) or app.config['noauth']:
+            return f(*args, **kwargs)
+        else:
+            return redirect(url_for('login', _external=True))
+
+    return decorated
+
+
+@app.route('/login')
+def login():
+    """Start the OAuth login process.
+
+    Parameters
+    ----------
+    complete : {yes, no}, default=yes
+        Direct the OAuth login process to complete; must be 'no' in order to
+        allow commandline interfaces to successfully authenticate.
+    """
+    callback = url_for('authorized', _external=True)
+    if request.args.get('complete', 'yes') == 'no':
+        callback += "?complete=no"
+    return oauth_handler.authorize(callback)
+
+
+@app.route('/login/authorized')
+def authorized():
+    """Finish the OAuth login process.
+
+    This is the callback endpoint registered with different OAuth handlers. For
+    commandline interfaces, which require manual intervention, the complete=no
+    parameter must be passed through the login redirect route.
+
+    Parameters
+    ----------
+    complete : {yes, no}, default=yes
+        Complete the OAuth login process; if 'no', returns a well-formed URL
+        to be followed.
+    """
+    app.logger.info("{}".format(request))
+    if request.args.get('complete', 'yes') == 'yes':
+        resp = oauth_handler.authorized_response()
+        app.logger.info(resp)
+        if resp is None:
+            return 'Access denied: reason=%s error=%s' % (
+                request.args['error_reason'],
+                request.args['error_description']
+            )
+        session['access_token'] = (resp['access_token'], '')
+        return "Successfully logged in."
+    else:
+        return ("To complete log-in, proceed to this URL: {}"
+                .format(request.url))
+
+
+@app.route('/logout')
+@authenticate
+def logout():
+    """Log the user out of the current session."""
+    session.pop('access_token', None)
+    return "Success!"
+
+
+@app.route("/me")
+@authenticate
+def me():
+    """Demo endpoint illustrating the OAuth login."""
+    me = oauth_handler.get('userinfo')  # Specific to Google.
+    return jsonify({"data": me.data})
+
+
+@oauth_handler.tokengetter
+def get_oauth_token():
+    return session.get('access_token')
+
 
 @app.route('/api/v0.1/audio', methods=['POST'])
+@authenticate
 def audio_upload():
     """
     To POST files to this endpoint:
@@ -103,6 +204,7 @@ def audio_upload():
 
 
 @app.route('/api/v0.1/audio/<uri>', methods=['GET'])
+@authenticate
 def audio_download(uri):
     """
     To GET responses from this endpoint:
@@ -140,6 +242,7 @@ def audio_download(uri):
 
 
 @app.route('/api/v0.1/annotation/submit', methods=['POST'])
+@authenticate
 def annotation_submit():
     """
     To POST data to this endpoint:
@@ -203,6 +306,7 @@ def annotation_taxonomy():
 
 
 @app.route('/api/v0.1/task', methods=['GET'])
+@authenticate
 def next_task():
     """
     To fetch data at this endpoint:
@@ -248,12 +352,15 @@ if __name__ == '__main__':
         "--local",
         action='store_true', help="Use local backend services.")
     parser.add_argument(
+        "--noauth",
+        action='store_true', help="Disable authentication, for testing.")
+    parser.add_argument(
         "--debug",
         action='store_true',
         help="Run the Flask application in debug mode.")
 
     args = parser.parse_args()
-
+    app.config['noauth'] = args.noauth
     if args.local:
         config = os.path.join(os.path.dirname(__file__), 'local_config.json')
         app.config['cloud'] = json.load(open(config))

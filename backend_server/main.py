@@ -188,7 +188,7 @@ def annotation_submit():
 
 def get_taxonomy():
     tax_url = ("https://raw.githubusercontent.com/cosmir/open-mic/"
-               "ejh_20161119_iss8_webannot/data/instrument_taxonomy_v0.json")
+               "master/data/instrument_taxonomy_v0.json")
     res = requests.get(tax_url)
     values = []
     try:

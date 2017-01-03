@@ -34,13 +34,9 @@ setup(
         'Flask-Cors >= 3.0.2',
         'Flask-OAuthlib >= 0.9',
         'requests',
-        'protobuf',
-        'googleapis-common-protos',
-        'google-cloud >= 0.19.0',
-        'gunicorn == 19.6.0',
-        'gcloud',
         'six >= 1.3',
         'PyYAML'
+        'google-cloud >= 0.22.0',
     ],
     extras_require={
         'tests': ['pytest', 'pytest-cov']

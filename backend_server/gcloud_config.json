@@ -1,7 +1,14 @@
 {
-    "project_id": "<YOUR_PROJECT_ID>",
+    "project": "<YOUR_PROJECT_ID>",
     "storage": {
-        "name": "audio-data",
-        "backend": "gcp"
+        "name": "open-mic-data",
+        "backend": "gcloud"
+    },
+    "database": {
+        "backend": "gcloud"
+    },
+    "annotator": {
+        "scheme": "https",
+        "netloc": "<YOUR_PROJECT_ID>.appspot.com"
     }
 }

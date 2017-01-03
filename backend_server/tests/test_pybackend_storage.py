@@ -73,10 +73,10 @@ def test_Storage_client(tmpdir):
     assert isinstance(store.client, S.LocalClient)
 
 
-def test_Storage_upload(tmpdir):
+def test_Storage_put(tmpdir):
     store = S.Storage('blah-blah-5678', 'my-project-3', backend=S.LOCAL,
                       local_dir=str(tmpdir))
-    store.upload(b"hello darkness my old friend", 'song')
+    store.put('song', b"hello darkness my old friend")
 
 
 def test_Storage_download(tmpdir):
@@ -84,6 +84,6 @@ def test_Storage_download(tmpdir):
                       local_dir=str(tmpdir))
     key = 'my_song'
     fdata = b"hello darkness my old friend"
-    store.upload(fdata, key)
-    res = store.download(key)
+    store.put(key, fdata)
+    res = store.get(key)
     assert res == fdata

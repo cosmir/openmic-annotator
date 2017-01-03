@@ -1,3 +1,8 @@
+# Necessary for AppEngine deployment.
+# First, install deps into the lib directory
+#   $ pip install .[appengine] -t lib
+
+# Python3 (flex) environment only supported in US datacenters :o/
 runtime: python27
 api_version: 1
 threadsafe: true
@@ -5,3 +10,11 @@ threadsafe: true
 handlers:
 - url: /.*
   script: main.app
+  secure: always
+
+libraries:
+- name: ssl
+  version: latest
+
+skip_files:
+- ^.*\.pyc$

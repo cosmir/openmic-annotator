@@ -1,18 +1,17 @@
 {
-    "project_id": "<YOUR_PROJECT_ID>",
+    "project": "<YOUR_PROJECT_ID>",
     "storage": {
         "name": "audio-data",
         "backend": "local",
         "local_dir": "tmp"
     },
-    "audio-db": {
+    "database": {
         "backend": "local",
         "filepath": "tmp/database-file.json",
         "mode": "a"
     },
-    "annotation-db": {
-        "backend": "local",
-        "filepath": "tmp/annot-database-file.json",
-        "mode": "a"
+    "annotator": {
+        "scheme": "http",
+        "netloc": "localhost:8080"
     }
 }

@@ -12,12 +12,17 @@ caching behavior, which can cause the web app to use stale source files.
 """
 from __future__ import print_function
 
+from builtins import input
 import os
 import requests
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import signal
 import subprocess
+import sys
+
+HTTP_SERVER = {2: 'SimpleHTTPServer',
+               3: 'http.server'}[sys.version_info.major]
 
 
 def kill(*proccesses):
@@ -48,7 +53,7 @@ def run():
         requests.post('http://localhost:8080/api/v0.1/audio',
                       files=dict(audio=open(fpath, 'rb')))
 
-    webapp = subprocess.Popen(['python', '-m', 'http.server'],
+    webapp = subprocess.Popen(['python', '-m', HTTP_SERVER],
                               stdout=subprocess.PIPE, preexec_fn=os.setsid)
 
     print("Now serving at: http://localhost:8000/docs/annotator.html")

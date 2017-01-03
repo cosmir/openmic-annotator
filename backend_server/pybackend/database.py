@@ -3,7 +3,7 @@
 Example
 -------
 >>> import pybackend.database as D
->>> dbase = D.Database(project_id='my-fun-project',
+>>> dbase = D.Database(project='my-fun-project',
                        backend=S.LOCAL, filepath='my-db.json',
                        mode=D.APPEND, atomic=True)
 >>> key = "my_song"
@@ -14,10 +14,11 @@ Example
 """
 
 import json
-from gcloud import datastore
+from google.cloud import datastore
 import os
 
 from . import GCLOUD, LOCAL
+from . import urilib
 
 # Start clean
 WRITE = 'w'
@@ -34,12 +35,12 @@ class LocalClient():
     functionality we'll need (multiple indexing), e.g. pandas, mongo, etc.
     """
 
-    def __init__(self, project_id, filepath='', mode=APPEND, atomic=True):
+    def __init__(self, project, filepath='', mode=APPEND, atomic=True):
         """Create a local database client.
 
         Parameters
         ----------
-        project_id : str
+        project : str
             Unique identifier for the owner of this storage object.
 
         filepath : str
@@ -78,83 +79,125 @@ class LocalClient():
             with open(self._filepath, 'w') as fp:
                 json.dump(self._collection, fp)
 
-    def get(self, key):
-        """Get the record for the given key."""
-        return self._collection.get(key)
+    def get(self, uri):
+        """Get the record for the given URI."""
+        urilib.validate(uri)
+        return self._collection.get(uri)
 
-    def put(self, key, record):
-        """Store a record under the given key.
-
-        TODO(ejhumphrey): Call signature is backwards with the storage client;
-        should harmonize.
+    def put(self, uri, record, atomic=False):
+        """Store a record under the given URI.
 
         Parameters
         ----------
-        key : str
-            Key under which to write the record.
+        uri : str
+            URI under which to write the record.
 
         record : dict
             Dictionary object to write.
         """
-        # What happens if `key` is in self._collection?
-        self._collection[key] = record
-        if self.atomic:
+        urilib.validate(uri)
+        # What happens if `uri` is in self._collection?
+        self._collection[uri] = record
+        if self.atomic or atomic:
             self.flush()
 
-    def delete(self, key):
-        """Delete the record for a given key.
+    def delete(self, uri):
+        """Delete the record for a given URI.
 
         Parameters
         ----------
-        key : str
-            Key to delete. Passes quietly if key does not exist.
+        uri : str
+            URI to delete. Passes quietly if URI does not exist.
         """
-        if key in self._collection:
-            self._collection.pop(key)
+        urilib.validate(uri)
+        if uri in self._collection:
+            self._collection.pop(uri)
 
-    def keys(self):
-        """Returns an iterator over the keys in the Client."""
-        return self._collection.keys()
+    def uris(self, kind=None):
+        """Returns an iterator over the URIs in the Client.
+
+        Parameters
+        ----------
+        kind : str, default=None
+            Optionally filter over the URI kind in the database.
+
+        Yields
+        ------
+        uri : str
+            A URI in the collection.
+        """
+        for uri in self._collection.keys():
+            if kind is None or kind == urilib.split(uri)[0]:
+                yield uri
 
 
 class GClient(object):
     """Thin wrapper for gcloud's DataStore client.
 
-    TODO(ejhumphrey):
-     * Currently unclear how to plumb entity "kinds" through this abstraction.
-     * The put/get interface for Google's native Datastore client requires
-       some wrangling in terms of how Key objects are constructed. This
-       interface serves to abstract that behavior away.
+    Notes:
+    - We use a URI format (<kind>:<gid>) to pass DataStore "kinds" around.
+      This doesn't allow us to hierarchically nest keys, which DS makes
+      possible, but we *probably* won't need to leverage this functionality.
+    - The put/get interface for Google's native Datastore client requires
+      some wrangling in terms of how Key objects are constructed. This
+      interface serves to abstract that behavior away.
     """
 
-    def __init__(self, project_id):
+    def __init__(self, project):
         """Create a GCP Datastore client.
 
         Parameters
         ----------
-        project_id : str
+        project : str
             Unique identifier for the owner of this storage object.
         """
-        self.project_id = project_id
+        self.project = project
 
     @property
     def _client(self):
-        return datastore.Client(self.project_id)
+        return datastore.Client(self.project)
 
-    def get(self, key):
-        """TODO(ejhumphrey): writeme"""
-        raise NotImplementedError("Placeholder, needs revisiting.")
-        key = self._client.key("key", key)
-        return self._client.get(key)
+    def get(self, uri):
+        """Return a record for the given URI."""
+        kind, gid = urilib.split(uri)
+        key = self._client.key(kind, gid)
+        return dict(**self._client.get(key))
 
-    def put(self, key, record):
-        """TODO(ejhumphrey): writeme"""
-        raise NotImplementedError("Placeholder, needs revisiting.")
+    def put(self, uri, record, exclude_from_indexes=None):
+        """Put a record into the database."""
+        exclude_from_indexes = exclude_from_indexes or []
+
         # Create Entity from record + key
-        key = self._client.key("key", key)
-        entity = datastore.Entity(key, exclude_from_indexes=[])
+        kind, gid = urilib.split(uri)
+        key = self._client.key(kind, gid)
+
+        entity = datastore.Entity(
+            key, exclude_from_indexes=exclude_from_indexes)
         entity.update(record)
         self._client.put(entity)
+
+    def uris(self, kind=None):
+        """Iterator over the URIs in the database.
+
+        Parameters
+        ----------
+        kind : str, default=None
+            Optionally filter over the URI kind in the database.
+
+        Yields
+        ------
+        uri : str
+            A URI in the collection.
+        """
+        kwargs = dict()
+        if kind:
+            kwargs.update(kind=kind)
+        query = self._client.query(**kwargs)
+
+        # Sets a filter in-place on the query to return keys.
+        query.keys_only()
+        for v in query.fetch():
+            yield urilib.join(v.kind, v.key.name)
 
 
 BACKENDS = {
@@ -163,12 +206,12 @@ BACKENDS = {
 }
 
 
-def Database(project_id, backend, **kwargs):
+def Database(project, backend, **kwargs):
     """Factory constructor for different database backends.
 
     Parameters
     ----------
-    project_id : str
+    project : str
         Unique identifier for the owner of this storage object.
 
     backend : str, default='gcloud'
@@ -176,4 +219,4 @@ def Database(project_id, backend, **kwargs):
 
     **kwargs : Additional arguments to pass through to the different backends.
     """
-    return BACKENDS[backend](project_id, **kwargs)
+    return BACKENDS[backend](project, **kwargs)

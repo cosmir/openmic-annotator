@@ -15,7 +15,12 @@ def app():
                           'local_config.json')
     main.app.config['cloud'] = json.load(open(config, 'r'))
     main.app.testing = True
-    return main.app.test_client()
+    with main.app.test_client() as client:
+        # This forces the app to pass authentication; however, it doesn't (yet)
+        # let us test that authenticated routes are blocked.
+        with client.session_transaction() as sess:
+            sess['access_token'] = ('fluflu', None)
+        return client
 
 
 def test_audio_upload(app):

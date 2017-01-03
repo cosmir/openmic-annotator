@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import mimetypes
+import six
 import six.moves.urllib.error as urlerror
 import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
@@ -22,8 +23,10 @@ def uuid(data):
     uuid : uuid
         Generated unique identifier.
     """
-    if isinstance(data, str):
-        data = bytearray(data, 'utf8')
+    if isinstance(data, six.string_types) and six.PY2:
+        data = six.BytesIO(data).buf
+    elif isinstance(data, six.string_types) and six.PY3:
+        data = bytearray(data, 'utf-8')
 
     hex_data = hashlib.md5(data).hexdigest()
     return UUID(hex=hex_data, version=4)
@@ -62,5 +65,5 @@ def mimetype_for_file(fname, strict=False):
     """
     mtype, enc = mimetypes.guess_type(fname)
     if mtype is None and not strict:
-        mtype = MIMETYPES[None]
+        mtype, enc = mimetypes.guess_type('foo.bin')
     return mtype

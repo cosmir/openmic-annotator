@@ -33,14 +33,10 @@ setup(
         'Flask >= 0.11.1',
         'Flask-Cors >= 3.0.2',
         'requests',
-        'protobuf',
-        'googleapis-common-protos',
-        'google-cloud >= 0.19.0',
-        'gunicorn == 19.6.0',
-        'gcloud',
+        'google-cloud >= 0.22.0',
         'six >= 1.3'
     ],
     extras_require={
-        'tests' : ['pytest', 'pytest-cov']
+        'tests': ['pytest', 'pytest-cov']
     }
 )

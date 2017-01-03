@@ -35,7 +35,9 @@ import requests
 import os
 
 import pybackend.database
+import pybackend.models
 import pybackend.storage
+import pybackend.urilib
 import pybackend.utils
 
 
@@ -48,12 +50,14 @@ app = Flask(__name__)
 CORS(app)
 
 # Set the cloud backend
-# TODO: This should be controlled by `app.yaml`, right?
-CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), 'gcloud_config.json')
+CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), '.config.json')
 app.config['cloud'] = json.load(open(CLOUD_CONFIG))
 
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
+
+# Python 2.7 doesn't ship with `.json`?
+mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 
 
 @app.route('/api/v0.1/audio', methods=['POST'])
@@ -70,31 +74,34 @@ def audio_upload():
     audio_data = request.files['audio']
     file_ext = os.path.splitext(audio_data.filename)[-1][1:]
     if file_ext not in AUDIO_EXTENSIONS:
-        logging.exception('Attempted upload of unsupported filetype.')
+        app.logger.exception('Attempted upload of unsupported filetype.')
         return 'Filetype not supported.', 400
 
     bytestring = audio_data.stream.read()
+    app.logger.info("Uploaded data: type={}, len={}"
+                    .format(type(bytestring), len(bytestring)))
 
     # Copy to cloud storage
     store = pybackend.storage.Storage(
-        project_id=app.config['cloud']['project_id'],
+        project=app.config['cloud']['project'],
         **app.config['cloud']['storage'])
 
-    uri = str(pybackend.utils.uuid(bytestring))
-    filepath = os.path.extsep.join([uri, file_ext])
-    store.upload(bytestring, filepath)
+    gid = str(pybackend.utils.uuid(bytestring))
+    store.put(gid, bytestring)
 
     # Index in datastore
     # Keep things like extension, storage platform, mimetype, etc.
     dbase = pybackend.database.Database(
-        project_id=app.config['cloud']['project_id'],
-        **app.config['cloud']['audio-db'])
-    record = dict(filepath=filepath,
+        project=app.config['cloud']['project'],
+        **app.config['cloud']['database'])
+
+    uri = pybackend.urilib.join('audio', gid)
+    record = dict(gid=gid, file_ext=file_ext,
                   created=str(datetime.datetime.now()))
+
     dbase.put(uri, record)
     record.update(
-        uri=uri,
-        message="Received {} bytes of data.".format(len(bytestring)))
+        uri=uri, message="Received {} bytes of data.".format(len(bytestring)))
 
     resp = Response(json.dumps(record), status=200,
                     mimetype=mimetypes.types_map[".json"])
@@ -102,17 +109,18 @@ def audio_upload():
     return resp
 
 
-@app.route('/api/v0.1/audio/<uri>', methods=['GET'])
-def audio_download(uri):
+@app.route('/api/v0.1/audio/<gid>', methods=['GET'])
+def audio_download(gid):
     """
     To GET responses from this endpoint:
 
     $ curl -XGET localhost:8080/audio/bbdde322-c604-4753-b828-9fe8addf17b9
     """
-
     dbase = pybackend.database.Database(
-        project_id=app.config['cloud']['project_id'],
-        **app.config['cloud']['audio-db'])
+        project=app.config['cloud']['project'],
+        **app.config['cloud']['database'])
+
+    uri = pybackend.urilib.join('audio', gid)
 
     entity = dbase.get(uri)
     if entity is None:
@@ -124,16 +132,17 @@ def audio_download(uri):
 
     else:
         store = pybackend.storage.Storage(
-            project_id=app.config['cloud']['project_id'],
+            project=app.config['cloud']['project'],
             **app.config['cloud']['storage'])
 
-        data = store.download(entity['filepath'])
+        data = store.get(entity['gid'])
         app.logger.debug("Returning {} bytes".format(len(data)))
 
+        filename = os.path.extsep.join([entity['gid'], entity['file_ext']])
         resp = send_file(
             io.BytesIO(data),
-            attachment_filename=entity['filepath'],
-            mimetype=pybackend.utils.mimetype_for_file(entity['filepath']))
+            attachment_filename=filename,
+            mimetype=pybackend.utils.mimetype_for_file(filename))
 
     resp.headers['Link'] = SOURCE
     return resp
@@ -157,11 +166,15 @@ def annotation_submit():
         status = 200
 
         db = pybackend.database.Database(
-            project_id=app.config['cloud']['project_id'],
-            **app.config['cloud']['annotation-db'])
-        uri = str(pybackend.utils.uuid(json.dumps(request.json)))
-        record = dict(created=str(datetime.datetime.now()), **request.json)
-        db.put(uri, record)
+            project=app.config['cloud']['project'],
+            **app.config['cloud']['database'])
+        gid = str(pybackend.utils.uuid(json.dumps(request.json)))
+        uri = pybackend.urilib.join('annotation', gid)
+        record = pybackend.models.AnnotationResponse(
+            created=str(datetime.datetime.now()),
+            response=request.json,
+            user_id='anonymous')
+        db.put(uri, record.flatten())
     else:
         status = 400
         data = json.dumps(dict(message='Invalid Content-Type; '
@@ -209,19 +222,20 @@ def next_task():
 
     $ curl -X GET localhost:8080/task
     """
-    audio_url = "http://localhost:8080/api/v0.1/audio/{}"
-
     db = pybackend.database.Database(
-        project_id=app.config['cloud']['project_id'],
-        **app.config['cloud']['audio-db'])
+        project=app.config['cloud']['project'],
+        **app.config['cloud']['database'])
 
-    random_uri = random.choice(list(db.keys()))
+    random_uri = random.choice(list(db.uris(kind='audio')))
+    audio_url = "{scheme}://{netloc}/api/v0.1/audio/{gid}".format(
+        gid=pybackend.urilib.split(random_uri)[1],
+        **app.config['cloud']['annotator'])
 
     task = dict(feedback="none",
                 visualization=random.choice(['waveform', 'spectrogram']),
                 proximityTag=[],
                 annotationTag=get_taxonomy(),
-                url=audio_url.format(random_uri),
+                url=audio_url,
                 numRecordings='?',
                 recordingIndex=random_uri,
                 tutorialVideoURL="https://www.youtube.com/embed/Bg8-83heFRM",

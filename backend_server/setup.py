@@ -35,8 +35,8 @@ setup(
         'Flask-OAuthlib >= 0.9',
         'requests',
         'six >= 1.3',
-        'PyYAML'
-        'google-cloud >= 0.22.0',
+        'PyYAML',
+        'google-cloud >= 0.22.0'
     ],
     extras_require={
         'tests': ['pytest', 'pytest-cov']

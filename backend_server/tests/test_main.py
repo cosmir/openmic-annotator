@@ -5,6 +5,7 @@ import json
 import os
 import requests.status_codes
 
+import pybackend.urilib as urilib
 import pybackend.utils as utils
 
 
@@ -22,6 +23,10 @@ def test_audio_upload(app):
     data = dict(audio=(BytesIO(b'my file contents'), 'blah.wav'))
     r = app.post('/api/v0.1/audio', data=data)
     assert r.status_code == requests.status_codes.codes.OK
+    data = json.loads(r.data.decode('utf-8'))
+    assert data['uri']
+    kind, gid = urilib.split(data['uri'])
+    assert kind == 'audio'
 
 
 def test_audio_upload_method_not_allowed(app):
@@ -41,8 +46,8 @@ def test_audio_get(app):
     data = dict(audio=(BytesIO(content), 'blah.wav'))
     r = app.post('/api/v0.1/audio', data=data)
     assert r.status_code == requests.status_codes.codes.OK
-    gid = json.loads(r.data.decode('utf-8'))['gid']
-
+    uri = json.loads(r.data.decode('utf-8'))['uri']
+    kind, gid = urilib.split(uri)
     # Now let's go looking for it
     r = app.get('/api/v0.1/audio/{}'.format(gid))
     assert r.status_code == requests.status_codes.codes.OK

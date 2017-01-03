@@ -139,10 +139,10 @@ def audio_download(gid):
             project=app.config['cloud']['project'],
             **app.config['cloud']['storage'])
 
-        data = store.get(entity['gid'])
+        data = store.get(gid)
         app.logger.debug("Returning {} bytes".format(len(data)))
 
-        filename = os.path.extsep.join([entity['gid'], entity['file_ext']])
+        filename = os.path.extsep.join([gid, entity['file_ext']])
         resp = send_file(
             io.BytesIO(data),
             attachment_filename=filename,
@@ -192,7 +192,7 @@ def annotation_submit():
 
 def get_taxonomy():
     tax_url = ("https://raw.githubusercontent.com/cosmir/open-mic/"
-               "ejh_20161119_iss8_webannot/data/instrument_taxonomy_v0.json")
+               "master/data/instrument_taxonomy_v0.json")
     res = requests.get(tax_url)
     values = []
     try:

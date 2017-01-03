@@ -38,7 +38,7 @@ from requests.adapters import HTTPAdapter
 import requests
 from six.moves.urllib.parse import urlparse
 
-logger = logging.basicConfig(level=logging.DEBUG)
+LOG = logging.getLogger('audio_uploader')
 
 
 def upload(filename, metadata, url):
@@ -73,8 +73,22 @@ def upload(filename, metadata, url):
     )
     end = datetime.datetime.now()
     elapsed = end - start
-    return dict(status=response.status_code, time_elapsed=str(elapsed),
-                start_time=str(start), filename=filename, **response.json())
+    result = dict(status=response.status_code, time_elapsed=str(elapsed),
+                  start_time=str(start), filename=filename, **response.json())
+    LOG.info(json.dumps(result))
+
+
+def init_logger(log_file, level=logging.INFO):
+    logging.basicConfig(level=level)
+    handler = logging.FileHandler(log_file)
+    handler.setLevel(logging.INFO)
+
+    # create a logging format
+    formatter = logging.Formatter('%(message)s')
+    handler.setFormatter(formatter)
+
+    # add the handlers to the logger
+    LOG.addHandler(handler)
 
 
 if __name__ == '__main__':
@@ -88,7 +102,7 @@ if __name__ == '__main__':
     now = datetime.datetime.now()
     parser.add_argument(
         "--log_file", type=str,
-        default='upload_log-{}.json'.format(now.strftime("%Y%m%d-%H%M%S")),
+        default='upload_results-{}.log'.format(now.strftime("%Y%m%d-%H%M%S")),
         help="Filepath for writing response data as JSON.")
     parser.add_argument(
         "--verbose", type=int, default=0,
@@ -99,9 +113,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     audio_files = json.load(open(args.audio_files))
-    results = joblib.Parallel(n_jobs=args.n_jobs, verbose=args.verbose)(
+    init_logger(args.log_file)
+    joblib.Parallel(n_jobs=args.n_jobs, verbose=args.verbose)(
         joblib.delayed(upload)(url=args.upload_url, **record)
         for record in audio_files)
-
-    with open(args.log_file, 'w') as fp:
-        json.dump(results, fp, indent=2)

@@ -26,7 +26,7 @@ import datetime
 from flask import Flask, request, Response, session, redirect, url_for, jsonify
 from flask import send_file
 from flask_cors import CORS
-from flask_oauthlib.client import OAuth
+
 from functools import wraps
 import io
 import json
@@ -39,6 +39,7 @@ import yaml
 
 import pybackend.database
 import pybackend.models
+import pybackend.oauth
 import pybackend.storage
 import pybackend.urilib
 import pybackend.utils
@@ -48,11 +49,6 @@ mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
-
-# TODO: One of the following
-#  - Whitelist localhost and `SOURCE` below.
-#  - Use AppEngine for delivery of the annotator HTML?
-CORS(app)
 
 # Set the cloud backend
 CONFIG = os.path.join(os.path.dirname(__file__), '.config.yaml')
@@ -65,18 +61,11 @@ app.secret_key = 'development'
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
 
-oauth = OAuth(app)
-oauth_handler = oauth.remote_app(
-    'google',
-    consumer_key=app.config['oauth']['google']['client_id'],
-    consumer_secret=app.config['oauth']['google']['client_secret'],
-    request_token_params={'scope': 'email'},
-    base_url='https://www.googleapis.com/oauth2/v1/',
-    request_token_url=None,
-    access_token_method='POST',
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-)
+# TODO: One of the following
+#  - Whitelist localhost and `SOURCE` below.
+#  - Use AppEngine for delivery of the annotator HTML?
+CORS(app)
+OAUTH = pybackend.oauth.OAuth(app, session)
 
 
 def authenticate(f):
@@ -101,11 +90,16 @@ def login():
     complete : {yes, no}, default=yes
         Direct the OAuth login process to complete; must be 'no' in order to
         allow commandline interfaces to successfully authenticate.
+
+    app : {google, spotify}, default=google
+        Third-party application to use for OAuth handling.
     """
     callback = url_for('authorized', _external=True)
+    app_name = request.args.get('app', pybackend.oauth.GOOGLE).lower()
+    query = "?app={}".format(app_name)
     if request.args.get('complete', 'yes') == 'no':
-        callback += "?complete=no"
-    return oauth_handler.authorize(callback)
+        query += "&complete=no"
+    return OAUTH.get(app_name).authorize(callback + query)
 
 
 @app.route('/login/authorized')
@@ -123,8 +117,9 @@ def authorized():
         to be followed.
     """
     app.logger.info("{}".format(request))
+    app_name = request.args.get('app')
     if request.args.get('complete', 'yes') == 'yes':
-        resp = oauth_handler.authorized_response()
+        resp = OAUTH.get(app_name).authorized_response()
         app.logger.info(resp)
         if resp is None:
             return 'Access denied: reason=%s error=%s' % (
@@ -139,24 +134,18 @@ def authorized():
 
 
 @app.route('/logout')
-@authenticate
 def logout():
     """Log the user out of the current session."""
-    session.pop('access_token', None)
-    return "Success!"
+    token = session.pop('access_token', None)
+    return "Success!" if token else "Not currently logged in."
 
 
 @app.route("/me")
 @authenticate
 def me():
-    """Demo endpoint illustrating the OAuth login."""
-    me = oauth_handler.get('userinfo')  # Specific to Google.
-    return jsonify({"data": me.data})
-
-
-@oauth_handler.tokengetter
-def get_oauth_token():
-    return session.get('access_token')
+    """Demonstrate that the user has been successfully logged in."""
+    import ipdb;ipdb.set_trace()
+    return jsonify({"data": 'todo'})
 
 
 @app.route('/api/v0.1/audio', methods=['POST'])
@@ -362,8 +351,8 @@ if __name__ == '__main__':
         "--port", type=int, default=8080,
         help="Port on which to serve.")
     parser.add_argument(
-        "--local",
-        action='store_true', help="Use local backend services.")
+        "--config", type=str,
+        help="Specific config file to use.")
     parser.add_argument(
         "--noauth",
         action='store_true', help="Disable authentication, for testing.")
@@ -374,8 +363,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     app.config['noauth'] = args.noauth
-    if args.local:
-        config = os.path.join(os.path.dirname(__file__), 'local_config.json')
-        app.config['cloud'] = json.load(open(config))
+    if args.config:
+        cfg_file = os.path.join(os.path.dirname(__file__), args.config)
+        with open(cfg_file) as fp:
+            cfg = yaml.load(fp)
+
+        app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
 
     app.run(debug=args.debug, port=args.port)

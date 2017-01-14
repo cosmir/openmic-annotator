@@ -1,15 +1,15 @@
 cloud:
-    project: "<YOUR_PROJECT_ID>",
-        storage:
-        name: "audio-data",
-        backend: "local",
+    project: "<YOUR_PROJECT_ID>"
+    storage:
+        name: "audio-data"
+        backend: "local"
         local_dir: "tmp"
     database:
-        backend: "local",
-        filepath: "tmp/database-file.json",
+        backend: "local"
+        filepath: "tmp/database-file.json"
         mode: "a"
     annotator:
-        scheme: "http",
+        scheme: "http"
         netloc: "localhost:8080"
 oauth:
     google:

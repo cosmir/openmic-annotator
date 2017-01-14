@@ -6,7 +6,7 @@ cloud:
     database:
         backend: gcloud
     annotator:
-        scheme: "https",
+        scheme: "https"
         netloc: "<YOUR_PROJECT_ID>.appspot.com"
 oauth:
     google:

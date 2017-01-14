@@ -65,13 +65,16 @@ mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 def store_raw_audio(db, store, audio, source=None):
     """Convenience function to store an audio file object through the webapp.
 
-    TODO: Passing config parameters (or at least the db & storage) interfaces
-    is probably The Right Thing to do, but aiming for RFC levels here.
+    TODO: This should probably move ... somewhere else? Perhaps inside a
+    controller / delegate?
 
     Parameters
     ----------
-    app : flask.Flask
-        Webapp with appropriate config data; see `./configs/local.DEFAULT.yaml`
+    db : pybackend.database.Database
+        Interface to the database backend.
+
+    store : pybackend.database.Database
+        Interface to the binary storage backend.
 
     audio : werkzeug.datastructures.FileStorage
         Audio object referenced by a request object, when passed as a file in a
@@ -95,7 +98,6 @@ def store_raw_audio(db, store, audio, source=None):
 
     bytestring = audio.stream.read()
     # Copy to cloud storage
-
     gid = str(pybackend.utils.uuid(bytestring))
     store.put(gid, bytestring)
 
@@ -110,7 +112,31 @@ def store_raw_audio(db, store, audio, source=None):
                 message="Received {} bytes of data.".format(len(bytestring)))
 
 
-def fetch_audio_data(app, gid):
+def fetch_audio_data(db, store, gid):
+    """Convenience function to retrieve audio data through the webapp.
+
+    TODO: This should probably move ... somewhere else? Perhaps inside a
+    controller / delegate?
+
+    Parameters
+    ----------
+    db : pybackend.database.Database
+        Interface to the database backend.
+
+    store : pybackend.database.Database
+        Interface to the binary storage backend.
+
+    gid : str
+        A gid, pointing to a unique audio object.
+
+    Returns
+    -------
+    data : bytes
+        Raw bytestring of the audio data.
+
+    file_ext : str
+        File extension of the audio bytestream.
+    """
     dbase = pybackend.database.Database(
         project=app.config['cloud']['project'],
         **app.config['cloud']['database'])
@@ -123,7 +149,8 @@ def fetch_audio_data(app, gid):
             project=app.config['cloud']['project'],
             **app.config['cloud']['storage'])
 
-        data = store.get(entity['gid'])
+        gid = pybackend.urilib.split(uri)[1]
+        data = store.get(gid)
         app.logger.debug("Downloaded {} bytes".format(len(data)))
         fext = entity['file_ext']
     return data, fext
@@ -159,10 +186,12 @@ def audio_download(gid):
     """
     To GET responses from this endpoint:
 
-    $ curl -XGET localhost:8080/audio/bbdde322-c604-4753-b828-9fe8addf17b9
+    $ curl -XGET "localhost:8080/api/v0.1/audio/
+        bbdde322-c604-4753-b828-9fe8addf17b9"
     """
     data, fext = fetch_audio_data(app, gid)
     if data:
+        # TODO: can this use a FileStorage object also?
         filename = os.path.extsep.join([gid, fext])
         resp = send_file(
             io.BytesIO(data),

@@ -8,9 +8,10 @@ import werkzeug.datastructures as DS
 
 import pybackend.database
 import pybackend.storage
+import pybackend.urilib
 import pybackend.utils as utils
 
-from main import store_raw_audio
+from main import store_raw_audio, fetch_audio_data
 
 
 @pytest.fixture
@@ -39,6 +40,22 @@ def test_store_raw_audio(app, cloud_cfg):
 
     res = store_raw_audio(db, store, audio)
     assert res['uri'].startswith("audio:")
+
+
+def test_fetch_audio_data(app, cloud_cfg):
+    bts = b'my file contents'
+    audio = DS.FileStorage(stream=BytesIO(bts),
+                           filename='blah.wav')
+
+    store = pybackend.storage.Storage(
+        project=cloud_cfg['project'], **cloud_cfg['storage'])
+    db = pybackend.database.Database(
+        project=cloud_cfg['project'], **cloud_cfg['database'])
+
+    res = store_raw_audio(db, store, audio)
+    gid = pybackend.urilib.split(res['uri'])[1]
+    data, fext = fetch_audio_data(db, store, gid)
+    assert data == bts
 
 
 def test_audio_upload(app):

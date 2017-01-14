@@ -137,19 +137,10 @@ def fetch_audio_data(db, store, gid):
     file_ext : str
         File extension of the audio bytestream.
     """
-    dbase = pybackend.database.Database(
-        project=app.config['cloud']['project'],
-        **app.config['cloud']['database'])
-
     uri = pybackend.urilib.join('audio', gid)
-    entity = dbase.get(uri)
+    entity = db.get(uri)
     data, fext = b'', None
     if entity:
-        store = pybackend.storage.Storage(
-            project=app.config['cloud']['project'],
-            **app.config['cloud']['storage'])
-
-        gid = pybackend.urilib.split(uri)[1]
         data = store.get(gid)
         app.logger.debug("Downloaded {} bytes".format(len(data)))
         fext = entity['file_ext']
@@ -178,7 +169,7 @@ def audio_upload():
     try:
         record = store_raw_audio(db, store, audio)
         resp = Response(json.dumps(dict(uri=record['uri'])), status=200,
-                    mimetype=mimetypes.types_map[".json"])
+                        mimetype=mimetypes.types_map[".json"])
     except ValueError as derp:
         resp = Response(
             json.dumps(dict(message=str(derp))),
@@ -197,7 +188,13 @@ def audio_download(gid):
     $ curl -XGET "localhost:8080/api/v0.1/audio/
         bbdde322-c604-4753-b828-9fe8addf17b9"
     """
-    data, fext = fetch_audio_data(app, gid)
+    store = pybackend.storage.Storage(
+        project=app.config['cloud']['project'],
+        **app.config['cloud']['storage'])
+    db = pybackend.database.Database(
+        project=app.config['cloud']['project'],
+        **app.config['cloud']['database'])
+    data, fext = fetch_audio_data(db, store, gid)
     if data:
         # TODO: can this use a FileStorage object also?
         filename = os.path.extsep.join([gid, fext])
@@ -206,7 +203,7 @@ def audio_download(gid):
             attachment_filename=filename,
             mimetype=pybackend.utils.mimetype_for_file(filename))
     else:
-        msg = "Resource not found: {}".format(uri)
+        msg = "Resource not found: {}".format(gid)
         app.logger.info(msg)
         resp = Response(
             json.dumps(dict(message=msg)),

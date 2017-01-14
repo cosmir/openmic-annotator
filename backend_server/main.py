@@ -68,7 +68,8 @@ def authenticate(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         app.logger.info(session)
-        if app.config['noauth'] or session.get('access_token', None):
+        if any([app.config.get('noauth', False),
+                session.get('access_token', None)]):
             return f(*args, **kwargs)
         else:
             return redirect(url_for('login', _external=True))

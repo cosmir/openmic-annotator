@@ -158,10 +158,11 @@ def fetch_audio_data(db, store, gid):
 
 @app.route('/api/v0.1/audio', methods=['POST'])
 def audio_upload():
-    """
+    """Endpoint for uploading source audio content.
+
     To POST files to this endpoint:
 
-    $ curl -F "audio=@some_file.mp3" localhost:8080/api/v0.1/audio
+        $ curl -F "audio=@some_file.mp3" localhost:8080/api/v0.1/audio
 
     TODOs:
       - Store user data (who uploaded this? IP address?)
@@ -174,11 +175,18 @@ def audio_upload():
     db = pybackend.database.Database(
         project=app.config['cloud']['project'],
         **app.config['cloud']['database'])
-    record = store_raw_audio(app, audio)
-    resp = Response(uri=record['uri'], status=200,
+    try:
+        record = store_raw_audio(db, store, audio)
+        resp = Response(json.dumps(dict(uri=record['uri'])), status=200,
                     mimetype=mimetypes.types_map[".json"])
-    resp.headers['Link'] = SOURCE
-    return resp
+    except ValueError as derp:
+        resp = Response(
+            json.dumps(dict(message=str(derp))),
+            status=requests.status_codes.codes.BAD_REQUEST,
+            mimetype=mimetypes.types_map[".json"])
+    finally:
+        resp.headers['Link'] = SOURCE
+        return resp
 
 
 @app.route('/api/v0.1/audio/<gid>', methods=['GET'])

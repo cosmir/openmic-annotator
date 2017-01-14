@@ -14,7 +14,7 @@ def app():
     import main
 
     cfg_file = os.path.join(os.path.dirname(__file__), os.pardir,
-                            '.config.yaml')
+                            'configs', 'local.DEFAULT.yaml')
     with open(cfg_file) as fp:
         cfg = yaml.load(fp)
 

@@ -37,12 +37,7 @@ import requests
 import os
 import yaml
 
-import pybackend.database
-import pybackend.models
-import pybackend.oauth
-import pybackend.storage
-import pybackend.urilib
-import pybackend.utils
+import pybackend
 
 # Python 2.7 doesn't ship with `.json`?
 mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
@@ -99,7 +94,7 @@ def login():
     query = "?app={}".format(app_name)
     if request.args.get('complete', 'yes') == 'no':
         query += "&complete=no"
-    return OAUTH.get(app_name).authorize(callback + query)
+    return OAUTH.get(app_name).client.authorize(callback + query)
 
 
 @app.route('/login/authorized')
@@ -119,14 +114,15 @@ def authorized():
     app.logger.info("{}".format(request))
     app_name = request.args.get('app')
     if request.args.get('complete', 'yes') == 'yes':
-        resp = OAUTH.get(app_name).authorized_response()
+        oauthor = OAUTH.get(app_name)
+        resp = oauthor.client.authorized_response()
         app.logger.info(resp)
         if resp is None:
             return 'Access denied: reason=%s error=%s' % (
                 request.args['error_reason'],
                 request.args['error_description']
             )
-        session['access_token'] = (resp['access_token'], '')
+        session['access_token'] = (resp['access_token'], app_name)
         return "Successfully logged in."
     else:
         return ("To complete log-in, proceed to this URL: {}"
@@ -144,8 +140,9 @@ def logout():
 @authenticate
 def me():
     """Demonstrate that the user has been successfully logged in."""
-    import ipdb;ipdb.set_trace()
-    return jsonify({"data": 'todo'})
+    app_name = session['access_token'][1]
+    oauthor = OAUTH.get(app_name)
+    return jsonify(oauthor.user)
 
 
 @app.route('/api/v0.1/audio', methods=['POST'])

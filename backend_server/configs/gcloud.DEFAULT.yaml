@@ -1,0 +1,23 @@
+cloud:
+    project: "<YOUR_PROJECT_ID>"
+    storage:
+        name: "open-mic-data"
+        backend: gcloud
+    database:
+        backend: gcloud
+    annotator:
+        scheme: "https",
+        netloc: "<YOUR_PROJECT_ID>.appspot.com"
+oauth:
+    google:
+        client_id: "abc"
+        client_secret: "xyz"
+    spotify:
+        client_id: "abc"
+        client_secret: "xyz"
+    twitter:
+        client_id: "abc"
+        client_secret: "xyz"
+    facebook:
+        client_id: "abc"
+        client_secret: "xyz"

@@ -55,10 +55,11 @@ app = Flask(__name__)
 CORS(app)
 
 # Set the cloud backend
-CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), '.config.json')
-app.config['cloud'] = json.load(open(CLOUD_CONFIG))
-OAUTH_CONFIG = os.path.join(os.path.dirname(__file__), 'configs', 'oauth.yaml')
-app.config['oauth'] = yaml.load(open(OAUTH_CONFIG))
+CONFIG = os.path.join(os.path.dirname(__file__), '.config.yaml')
+with open(CONFIG) as fp:
+    cfg = yaml.load(fp)
+
+app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
 app.secret_key = 'development'
 
 SOURCE = "https://cosmir.github.io/open-mic/"

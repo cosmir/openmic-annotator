@@ -1,0 +1,26 @@
+cloud:
+    project: "<YOUR_PROJECT_ID>",
+        storage:
+        name: "audio-data",
+        backend: "local",
+        local_dir: "tmp"
+    database:
+        backend: "local",
+        filepath: "tmp/database-file.json",
+        mode: "a"
+    annotator:
+        scheme: "http",
+        netloc: "localhost:8080"
+oauth:
+    google:
+        client_id: "abc"
+        client_secret: "xyz"
+    spotify:
+        client_id: "abc"
+        client_secret: "xyz"
+    twitter:
+        client_id: "abc"
+        client_secret: "xyz"
+    facebook:
+        client_id: "abc"
+        client_secret: "xyz"

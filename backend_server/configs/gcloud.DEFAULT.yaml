@@ -15,9 +15,3 @@ oauth:
     spotify:
         client_id: "abc"
         client_secret: "xyz"
-    twitter:
-        client_id: "abc"
-        client_secret: "xyz"
-    facebook:
-        client_id: "abc"
-        client_secret: "xyz"

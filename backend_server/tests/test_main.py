@@ -4,18 +4,41 @@ from io import BytesIO
 import json
 import os
 import requests.status_codes
+import werkzeug.datastructures as DS
 
+import pybackend.database
+import pybackend.storage
 import pybackend.utils as utils
+
+from main import store_raw_audio
 
 
 @pytest.fixture
-def app():
-    import main
+def cloud_cfg():
     config = os.path.join(os.path.dirname(__file__), os.pardir,
                           'local_config.json')
-    main.app.config['cloud'] = json.load(open(config, 'r'))
+    return json.load(open(config, 'r'))
+
+
+@pytest.fixture
+def app(cloud_cfg):
+    import main
+    main.app.config.update(cloud=cloud_cfg)
     main.app.testing = True
     return main.app.test_client()
+
+
+def test_store_raw_audio(app, cloud_cfg):
+    audio = DS.FileStorage(stream=BytesIO(b'my file contents'),
+                           filename='blah.wav')
+
+    store = pybackend.storage.Storage(
+        project=cloud_cfg['project'], **cloud_cfg['storage'])
+    db = pybackend.database.Database(
+        project=cloud_cfg['project'], **cloud_cfg['database'])
+
+    res = store_raw_audio(db, store, audio)
+    assert res['uri'].startswith("audio:")
 
 
 def test_audio_upload(app):

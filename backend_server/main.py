@@ -148,6 +148,7 @@ def audio_download(gid):
     return resp
 
 
+# Should just be a POST to '/api/ver/annotation'
 @app.route('/api/v0.1/annotation/submit', methods=['POST'])
 def annotation_submit():
     """
@@ -200,12 +201,12 @@ def get_taxonomy():
     return values
 
 
-@app.route('/api/v0.1/annotation/taxonomy', methods=['GET'])
+@app.route('/api/v0.1/taxonomy', methods=['GET'])
 def annotation_taxonomy():
     """
     To fetch data at this endpoint:
 
-    $ curl -X GET localhost:8080/annotation/taxonomy
+    $ curl -X GET localhost:8080/taxonomy/<gid>=null
     """
     instruments = get_taxonomy()
     status = 200 if instruments else 400
@@ -215,18 +216,30 @@ def annotation_taxonomy():
     return resp
 
 
-@app.route('/api/v0.1/task', methods=['GET'])
-def next_task():
+@app.route('/api/v0.1/task/<gid>', methods=['GET'])
+def get_task():
     """
     To fetch data at this endpoint:
 
-    $ curl -X GET localhost:8080/task
+    $ curl -X GET localhost:8080/task/<gid>
     """
     db = pybackend.database.Database(
         project=app.config['cloud']['project'],
         **app.config['cloud']['database'])
 
-    random_uri = random.choice(list(db.uris(kind='audio')))
+    uri = pybackend.urilib.join('task', gid)
+
+    task_record = db.get(uri)
+
+    data = json.dumps(dict(task=task))
+    app.logger.debug("Returning:\n{}".format(data))
+    resp = Response(data)
+    resp.headers['Link'] = SOURCE
+    return resp
+
+
+@app.route('/api/v0.1/task/<gid>', methods=['POST'])
+def create_task():
     audio_url = "{scheme}://{netloc}/api/v0.1/audio/{gid}".format(
         gid=pybackend.urilib.split(random_uri)[1],
         **app.config['cloud']['annotator'])
@@ -240,11 +253,6 @@ def next_task():
                 recordingIndex=random_uri,
                 tutorialVideoURL="https://www.youtube.com/embed/Bg8-83heFRM",
                 alwaysShowTags=True)
-    data = json.dumps(dict(task=task))
-    app.logger.debug("Returning:\n{}".format(data))
-    resp = Response(data)
-    resp.headers['Link'] = SOURCE
-    return resp
 
 
 @app.errorhandler(500)

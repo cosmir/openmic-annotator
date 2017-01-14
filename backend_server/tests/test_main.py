@@ -1,9 +1,9 @@
 import pytest
 
 from io import BytesIO
-import json
 import os
 import requests.status_codes
+import yaml
 
 import pybackend.utils as utils
 
@@ -11,9 +11,13 @@ import pybackend.utils as utils
 @pytest.fixture
 def app():
     import main
-    config = os.path.join(os.path.dirname(__file__), os.pardir,
-                          'local_config.json')
-    main.app.config['cloud'] = json.load(open(config, 'r'))
+
+    cfg_file = os.path.join(os.path.dirname(__file__), os.pardir,
+                            '.config.yaml')
+    with open(cfg_file) as fp:
+        cfg = yaml.load(fp)
+
+    main.app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
     main.app.testing = True
     with main.app.test_client() as client:
         # This forces the app to pass authentication; however, it doesn't (yet)

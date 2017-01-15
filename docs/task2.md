@@ -11,7 +11,7 @@ In this task we consider a user with a corpus of audio music files, who wants a 
 
 The input to the system is a query instrument from the taxonomy and a corpus of audio music files. The output is a list of at most $M=1000$ files deemed relevant to the query instrument.
 
-[TBD]
+[JAMS example]
 
 ## Evaluation
 

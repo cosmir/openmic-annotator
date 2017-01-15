@@ -12,7 +12,7 @@ Such systems can be used for instance to automatically annotate a music collecti
 
 The input to the system is a music audio file. The output is a list of the instruments from the taxonomy deemed relevant to the audio file.
 
-[TBD]
+[JAMS example]
 
 ## Evaluation
 

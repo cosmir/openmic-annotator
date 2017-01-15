@@ -7,16 +7,8 @@ import pybackend.oauth as OA
 
 
 @pytest.fixture()
-def dummy_app():
-    app = flask.Flask("dummy_app")
-    app.testing = True
-    with app.test_client() as flk:
-        return flk
-
-
-@pytest.fixture()
-def dummy_oauth(dummy_app):
-    return client.OAuth(dummy_app)
+def dummy_oauth(sample_app):
+    return client.OAuth(sample_app)
 
 
 class DummyClient(object):
@@ -45,3 +37,20 @@ def test_Google___init__(dummy_oauth):
 def test_Spotify___init__(dummy_oauth):
     bc = OA.Spotify(dummy_oauth, flask.session, 'id', 'secret')
     assert bc is not None
+
+
+def test_OAuth___init__(sample_app):
+    sample_app.config = dict(
+        oauth=dict(spotify=dict(client_id='foo', client_secret='shhh'),
+                   google=dict(client_id='bar', client_secret='dontell')))
+    oauth = OA.OAuth(sample_app, flask.session)
+    assert oauth is not None
+
+
+def test_OAuth_get(sample_app):
+    sample_app.config = dict(
+        oauth=dict(spotify=dict(client_id='foo', client_secret='shhh'),
+                   google=dict(client_id='bar', client_secret='dontell')))
+    oauth = OA.OAuth(sample_app, flask.session)
+    for name in ["spotify", "google"]:
+        assert oauth.get(name)

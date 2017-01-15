@@ -71,6 +71,8 @@ def audio_upload():
       - Store user data (who uploaded this? IP address?)
       - File metadata
     """
+    app.logger.info("Upload request from {}".format(request.remote_addr))
+
     audio_data = request.files['audio']
     file_ext = os.path.splitext(audio_data.filename)[-1][1:]
     if file_ext not in AUDIO_EXTENSIONS:
@@ -89,21 +91,23 @@ def audio_upload():
     gid = str(pybackend.utils.uuid(bytestring))
     store.put(gid, bytestring)
 
-    # Index in datastore
-    # Keep things like extension, storage platform, mimetype, etc.
+    # Index in the database
     dbase = pybackend.database.Database(
         project=app.config['cloud']['project'],
         **app.config['cloud']['database'])
 
     uri = pybackend.urilib.join('audio', gid)
-    record = dict(gid=gid, file_ext=file_ext,
-                  created=str(datetime.datetime.now()))
-
+    record = dict(file_ext=file_ext,
+                  created=str(datetime.datetime.now()),
+                  remote_addr=request.remote_addr,
+                  num_bytes=len(bytestring),
+                  **request.form)
     dbase.put(uri, record)
-    record.update(
-        uri=uri, message="Received {} bytes of data.".format(len(bytestring)))
+    response_data = dict(
+        uri=uri,
+        message="Received {} bytes of data.".format(len(bytestring)))
 
-    resp = Response(json.dumps(record), status=200,
+    resp = Response(json.dumps(response_data), status=200,
                     mimetype=mimetypes.types_map[".json"])
     resp.headers['Link'] = SOURCE
     return resp
@@ -135,10 +139,10 @@ def audio_download(gid):
             project=app.config['cloud']['project'],
             **app.config['cloud']['storage'])
 
-        data = store.get(entity['gid'])
+        data = store.get(gid)
         app.logger.debug("Returning {} bytes".format(len(data)))
 
-        filename = os.path.extsep.join([entity['gid'], entity['file_ext']])
+        filename = os.path.extsep.join([gid, entity['file_ext']])
         resp = send_file(
             io.BytesIO(data),
             attachment_filename=filename,

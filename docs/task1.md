@@ -10,7 +10,7 @@ Such systems can be used for instance to automatically annotate a music collecti
 
 ## Format
 
-The input to the system is a music audio file. The output is a list of the instruments from the taxonomy deemed relevant to the audio file.
+The input to the system is an audio music file. The output is a list of the instruments from the taxonomy deemed relevant to the audio file.
 
 [JAMS example]
 

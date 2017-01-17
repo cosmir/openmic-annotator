@@ -8,9 +8,13 @@ SPOTIFY = 'spotify'
 
 class BaseClient(object):
 
-    NAME = 'abc'
+    # Subclasses should set the common name of the Client.
+    NAME = ''
 
     def __init__(self, oauth, session, client_id, client_secret):
+        if not self.NAME:
+            raise NotImplementedError(
+                "Subclasses must set `NAME` as a class variable")
         self.oauth = oauth
         self.session = session
         self.client_id = client_id

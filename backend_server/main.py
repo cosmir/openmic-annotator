@@ -106,6 +106,9 @@ def authorized():
     commandline interfaces, which require manual intervention, the complete=no
     parameter must be passed through the login redirect route.
 
+    TODO: Update this to a more appropriate response once the annotator is
+    updated.
+
     Parameters
     ----------
     complete : {yes, no}, default=yes
@@ -132,7 +135,11 @@ def authorized():
 
 @app.route('/logout')
 def logout():
-    """Log the user out of the current session."""
+    """Log the user out of the current session.
+
+    TODO: Update this to a more appropriate response once the annotator is
+    updated.
+    """
     token = session.pop('access_token', None)
     return "Success!" if token else "Not currently logged in."
 
@@ -141,7 +148,11 @@ def logout():
 @authenticate
 def me():
     """Demonstrate that the user has been successfully logged in."""
-    app_name = session['access_token'][1]
+    token_data = session.get('access_token')
+    if not token_data:
+        return "No user logged in."
+
+    app_name = token_data[1]
     oauthor = OAUTH.get(app_name)
     return jsonify(oauthor.user)
 

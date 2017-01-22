@@ -32,7 +32,7 @@ def kill(*proccesses):
 
 def run():
     server = subprocess.Popen(['python', 'backend_server/main.py', '--port',
-                               '8080', '--local', '--debug'],
+                               '8080', '--debug'],
                               stdout=subprocess.PIPE, preexec_fn=os.setsid)
 
     # Test that the server is on; will raise an exception after enough attempts

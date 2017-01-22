@@ -22,6 +22,8 @@ def test_BaseClient___init__():
         OA.BaseClient(None, None, 'id', 'secret')
 
     class TestBaseClient(OA.BaseClient):
+        NAME = "test-base-client"
+
         def _build_client(self):
             return DummyClient()
 

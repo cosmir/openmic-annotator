@@ -101,7 +101,25 @@ Be sure to replace `<PROJECT_ID>` with the appropriate one matching the account 
 
 ## OAuth
 
+### Spotify
+
+To configure Spotify to verify OAuth credentials, follow the following steps (assuming you already have a Spotify user account):
+
+- Go to the [developer portal](https://developer.spotify.com/web-api/) and proceed to "My Applications".
+
+- Select "Create an App"; provide it with a human-readable name and description. Note that these will be displayed to a user when authenticating.
+
+- Make note of the "Client ID" and "Client Secret", and store them in a YAML file in this repository. You can use either of the template files in `configs/` as a starter, and you'll want to copy it to the backend root with a leading `.`, e.g. `backend_server/.config.cloud.yaml`).
+
+- For now, set the "Redirect URI" to the following:
+  - [http://localhost:8080/login/authorized/spotify](http://localhost:8080/login/authorized/spotify)
+  - [http://localhost:8080/login/authorized/spotify?show_dialog=True](http://localhost:8080/login/authorized/spotify?show_dialog=True)
+
+- Make sure you save your changes!
+
 ### Google
+
+To configure Google to verify OAuth credentials, follow the following steps (assuming you already have a Google Cloud Platform developer account):
 
 - Go to the GCP console, at https://console.cloud.google.com/, and select "API" from the menu (the infamous "hamburger" button). From the vertical menu tray on the left-hand side, select "Credentials". You can shortcut this by replacing <YOUR_PROJECT> in the following URL:
 
@@ -111,6 +129,8 @@ https://console.cloud.google.com/apis/credentials?project=<YOUR_PROJECT>
 
 - Select "Create Credentials", and pick "OAuth client ID" from the pop-up menu.
 
-- Select "Web Application" and provide an appropriate name; we'll skip the origin and redirect URLs for the time being.
+- Select "Web Application" and provide an appropriate name.
 
-- Copy the client ID and secret to the `google` section of the the OAuth config file, i.e. `configs/oauth.yaml`.
+- Copy the Client ID and Client Secret to the `google` section of the the OAuth config file. Copy this to the backend root directory, and prefix with a leading `.`, e.g. `backend_server/.config.cloud.yaml`.
+
+- For now, set the redirect URL to [http://localhost:8080/login/authorized/google](http://localhost:8080/login/authorized/google).

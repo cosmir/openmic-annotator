@@ -4,6 +4,7 @@ import flask_oauthlib.client as client
 
 GOOGLE = 'google'
 SPOTIFY = 'spotify'
+TOKEN = 'access_token'
 
 
 class BaseClient(object):
@@ -30,7 +31,7 @@ class BaseClient(object):
         raise NotImplementedError("Subclass for third-party apps.")
 
     def _tokengetter(self):
-        return self.session.get('access_token')
+        return self.session.get(TOKEN)
 
 
 class Google(BaseClient):

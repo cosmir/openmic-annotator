@@ -69,7 +69,7 @@ def authenticate(f):
     def decorated(*args, **kwargs):
         app.logger.info(session)
         if any([app.config.get('noauth', False),
-                session.get('access_token', None)]):
+                session.get(pybackend.oauth.TOKEN, None)]):
             return f(*args, **kwargs)
         else:
             return redirect(url_for('login', _external=True))
@@ -78,28 +78,26 @@ def authenticate(f):
 
 
 @app.route('/login')
-def login():
+@app.route('/login/<app_name>')
+def login(app_name='spotify'):
     """Start the OAuth login process.
 
-    Parameters
-    ----------
+    Query Parameters
+    ----------------
     complete : {yes, no}, default=yes
         Direct the OAuth login process to complete; must be 'no' in order to
         allow commandline interfaces to successfully authenticate.
-
-    app : {google, spotify}, default=google
-        Third-party application to use for OAuth handling.
     """
-    callback = url_for('authorized', _external=True)
-    app_name = request.args.get('app', pybackend.oauth.GOOGLE).lower()
-    query = "?app={}".format(app_name)
+    app_name = app_name.lower()
+    callback = url_for('authorized', app_name=app_name, _external=True)
+    query = ""
     if request.args.get('complete', 'yes') == 'no':
-        query += "&complete=no"
+        query += "?complete=no"
     return OAUTH.get(app_name).client.authorize(callback + query)
 
 
-@app.route('/login/authorized')
-def authorized():
+@app.route('/login/authorized/<app_name>')
+def authorized(app_name='spotify'):
     """Finish the OAuth login process.
 
     This is the callback endpoint registered with different OAuth handlers. For
@@ -109,24 +107,23 @@ def authorized():
     TODO: Update this to a more appropriate response once the annotator is
     updated.
 
-    Parameters
-    ----------
+    Query Parameters
+    ----------------
     complete : {yes, no}, default=yes
-        Complete the OAuth login process; if 'no', returns a well-formed URL
-        to be followed.
+        Direct the OAuth login process to complete; must be 'no' in order to
+        allow commandline interfaces to successfully authenticate.
     """
     app.logger.info("{}".format(request))
-    app_name = request.args.get('app')
+    app_name = app_name.lower()
     if request.args.get('complete', 'yes') == 'yes':
         oauthor = OAUTH.get(app_name)
         resp = oauthor.client.authorized_response()
         app.logger.info(resp)
         if resp is None:
-            return 'Access denied: reason=%s error=%s' % (
-                request.args['error_reason'],
-                request.args['error_description']
-            )
-        session['access_token'] = (resp['access_token'], app_name)
+            return ('Access denied: reason={error_reason} '
+                    'error={error_description}'.format(**request.args))
+
+        session[pybackend.oauth.TOKEN] = (resp['access_token'], app_name)
         return "Successfully logged in."
     else:
         return ("To complete log-in, proceed to this URL: {}"
@@ -140,7 +137,7 @@ def logout():
     TODO: Update this to a more appropriate response once the annotator is
     updated.
     """
-    token = session.pop('access_token', None)
+    token = session.pop(pybackend.oauth.TOKEN, None)
     return "Success!" if token else "Not currently logged in."
 
 
@@ -148,12 +145,12 @@ def logout():
 @authenticate
 def me():
     """Demonstrate that the user has been successfully logged in."""
-    token_data = session.get('access_token')
-    if not token_data:
+    token = session.get(pybackend.oauth.TOKEN)
+    app.logger.debug(str(token))
+    if not token:
         return "No user logged in."
 
-    app_name = token_data[1]
-    oauthor = OAUTH.get(app_name)
+    oauthor = OAUTH.get(token[1])
     return jsonify(oauthor.user)
 
 

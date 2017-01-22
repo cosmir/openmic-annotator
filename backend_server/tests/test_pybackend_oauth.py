@@ -16,7 +16,7 @@ class DummyClient(object):
         pass
 
 
-def test_BaseClient___init__():
+def test_BaseClient___init__(sample_app):
 
     with pytest.raises(NotImplementedError):
         OA.BaseClient(None, None, 'id', 'secret')
@@ -27,8 +27,12 @@ def test_BaseClient___init__():
         def _build_client(self):
             return DummyClient()
 
-    bc = TestBaseClient(None, None, 'id', 'secret')
+        def user(self):
+            return {'me': 'abcd'}
+
+    bc = TestBaseClient(sample_app, flask.session, 'id', 'secret')
     assert bc is not None
+    assert bc.user is not None
 
 
 def test_Google___init__(dummy_oauth):

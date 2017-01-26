@@ -35,6 +35,13 @@ def kill(*proccesses):
 
 
 def run(wport, sport):
+    # Some sanity checks
+    assert os.path.isdir("docs") and os.path.isdir("backend_server"), \
+        "This script must be launched from OpenMic's root directory."
+    assert os.path.isdir("audio-annotator"), \
+        "Audio Annotator not found: please run:\n\t" \
+        "git submodule update --init"
+
     # Run the server
     cmd = "python {} --port {} --local {}".format(
         os.path.join('backend_server', 'main.py'), sport, '--debug')

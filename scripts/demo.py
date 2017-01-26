@@ -30,11 +30,27 @@ SERVER_PORT = 8080
 
 
 def kill(*proccesses):
+    """Kills a list of processes.
+
+    Parameters
+    ----------
+    processes: list
+        List of process ids to be killed.
+    """
     for proc in proccesses:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
 
 
 def run(wport, sport):
+    """Main process to run the demo.
+
+    Parameters
+    ----------
+    wport: int
+        Webapp port number.
+    sport: int
+        Server port number.
+    """
     # Some sanity checks
     assert os.path.isdir("docs") and os.path.isdir("backend_server"), \
         "This script must be launched from OpenMic's root directory."

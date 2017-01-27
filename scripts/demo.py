@@ -52,11 +52,12 @@ def run(wport, sport):
         Server port number.
     """
     # Some sanity checks
-    assert os.path.isdir("docs") and os.path.isdir("backend_server"), \
-        "This script must be launched from OpenMic's root directory."
-    assert os.path.isdir("audio-annotator"), \
-        "Audio Annotator not found: please run:\n\t" \
-        "git submodule update --init"
+    if not os.path.isdir("docs") or not os.path.isdir("backend_server"):
+        raise EnvironmentError(
+            "This script must be launched from OpenMic's root directory.")
+    if not os.path.isdir("audio-annotator"):
+        raise EnvironmentError("Audio Annotator not found: please run:\n\t"
+                               "git submodule update --init")
 
     # Run the server
     cmd = "python {} --port {} --local {}".format(

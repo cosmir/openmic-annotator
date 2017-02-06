@@ -258,7 +258,8 @@ def server_error(e):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
         "--port", type=int, default=8080,
         help="Port on which to serve.")

@@ -118,7 +118,7 @@ def audio_download(gid):
     """
     To GET responses from this endpoint:
 
-    $ curl -XGET localhost:8080/audio/bbdde322-c604-4753-b828-9fe8addf17b9
+    $ curl -XGET localhost:8080/api/v0.1/audio/bbdde322-c604-4753-b828-9fe8addf17b9
     """
     dbase = pybackend.database.Database(
         project=app.config['cloud']['project'],
@@ -158,7 +158,7 @@ def annotation_submit():
     To POST data to this endpoint:
 
     $ curl -H "Content-type: application/json" \
-        -X POST localhost:8080/annotation/submit \
+        -X POST localhost:8080/api/v0.1/annotation/submit \
         -d '{"message":"Hello Data"}'
     """
     if request.headers['Content-Type'] == 'application/json':
@@ -209,7 +209,7 @@ def annotation_taxonomy():
     """
     To fetch data at this endpoint:
 
-    $ curl -X GET localhost:8080/annotation/taxonomy
+    $ curl -X GET localhost:8080/api/v0.1/annotation/taxonomy
     """
     instruments = get_taxonomy()
     status = 200 if instruments else 400
@@ -224,7 +224,7 @@ def next_task():
     """
     To fetch data at this endpoint:
 
-    $ curl -X GET localhost:8080/task
+    $ curl -X GET localhost:8080/api/v0.1/task
     """
     db = pybackend.database.Database(
         project=app.config['cloud']['project'],

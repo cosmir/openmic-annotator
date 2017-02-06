@@ -20,26 +20,24 @@ Endpoints
   - /annotation/submit : POST
   - /annotation/taxonomy : GET
 """
-
 import argparse
 import datetime
-from flask import Flask, request, Response
-from flask import send_file
-from flask_cors import CORS
 import io
 import json
 import logging
 import mimetypes
-import random
-import requests
 import os
+import random
+
+import requests
+from flask import Flask, Response, request, send_file
+from flask_cors import CORS
 
 import pybackend.database
 import pybackend.models
 import pybackend.storage
 import pybackend.urilib
 import pybackend.utils
-
 
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)

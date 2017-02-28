@@ -32,7 +32,7 @@ import requests
 import yaml
 
 from flask import Flask, Response, request, send_file
-from flask import session, redirect, url_for, jsonify
+from flask import session, redirect, url_for, jsonify, render_template
 from flask_cors import CORS
 
 from functools import wraps
@@ -42,7 +42,11 @@ import pybackend
 # Python 2.7 doesn't ship with `.json`?
 mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 logging.basicConfig(level=logging.DEBUG)
-app = Flask(__name__)
+
+# TODO: This is fine for local testing, but something smarter is necessary
+#       for AppEngine deployment.
+app = Flask(__name__,
+            static_folder='../audio-annotator/static')
 
 # Set the cloud backend
 CONFIG = os.path.join(os.path.dirname(__file__), '.config.yaml')
@@ -123,7 +127,7 @@ def authorized(app_name='spotify'):
                     'error={error_description}'.format(**request.args))
 
         session[pybackend.oauth.TOKEN] = (resp['access_token'], app_name)
-        return "Successfully logged in."
+        return redirect(url_for('index'))
     else:
         return ("To complete log-in, proceed to this URL: {}"
                 .format(request.url))
@@ -138,6 +142,13 @@ def logout():
     """
     token = session.pop(pybackend.oauth.TOKEN, None)
     return "Success!" if token else "Not currently logged in."
+
+
+@app.route("/")
+@authenticate
+def index():
+    """Main entry point for the annotation application."""
+    return render_template("index.html")
 
 
 @app.route("/me")
@@ -329,9 +340,8 @@ def next_task():
         **app.config['cloud']['database'])
 
     random_uri = random.choice(list(db.uris(kind='audio')))
-    audio_url = "{scheme}://{netloc}/api/v0.1/audio/{gid}".format(
-        gid=pybackend.urilib.split(random_uri)[1],
-        **app.config['cloud']['annotator'])
+    audio_url = "api/v0.1/audio/{gid}".format(
+        gid=pybackend.urilib.split(random_uri)[1])
 
     task = dict(feedback="none",
                 visualization=random.choice(['waveform', 'spectrogram']),
@@ -359,6 +369,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
+        '--host', type=str, default='localhost',
+        help='Host address for deployment -- 0.0.0.0 for live')
+    parser.add_argument(
         "--port", type=int, default=8080,
         help="Port on which to serve.")
     parser.add_argument(
@@ -381,4 +394,4 @@ if __name__ == '__main__':
 
         app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
 
-    app.run(debug=args.debug, port=args.port)
+    app.run(debug=args.debug, host=args.host, port=args.port)

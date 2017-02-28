@@ -66,7 +66,7 @@ def launch_cms(port, noauth=False, max_retries=8):
 
     cmd = "python {} --port {} --config {} {}".format(
         os.path.join('backend_server', 'main.py'), port,
-        '.config-local.yaml', " ".join(flags))
+        os.path.join('backend_server', '.config-local.yaml'), " ".join(flags))
     logging.info("server: {}".format(cmd))
     server = subprocess.Popen(cmd.split(" "), stdout=subprocess.PIPE,
                               preexec_fn=os.setsid)

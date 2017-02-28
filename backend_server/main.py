@@ -42,22 +42,35 @@ import pybackend
 mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 logging.basicConfig(level=logging.DEBUG)
 
-# TODO: This is fine for local testing, but something smarter is necessary
-#       for AppEngine deployment.
-app = Flask(__name__,
-            static_folder='../audio-annotator/static')
-
-# Set the cloud backend
-CONFIG = os.path.join(os.path.dirname(__file__), '.config.yaml')
-with open(CONFIG) as fp:
-    cfg = yaml.load(fp)
-
-app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
+app = Flask(__name__)
 app.secret_key = 'development'
 
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
-OAUTH = pybackend.oauth.OAuth(app, session)
+OAUTH = None
+
+
+def configure(cfg):
+    """Configure the (singleton) application object.
+
+    TODO: Should yell if `cfg` is malformed.
+
+    Parameters
+    ----------
+    cfg : dict
+        Object containing configuration info.
+    """
+    app.static_folder = cfg['annotator']['static_folder']
+    app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
+    global OAUTH
+    OAUTH = pybackend.oauth.OAuth(app, session)
+
+
+# Default configuration
+CONFIG = os.path.join(os.path.dirname(__file__), '.config.yaml')
+with open(CONFIG) as fp:
+    cfg = yaml.load(fp)
+    configure(cfg)
 
 
 def authenticate(f):
@@ -370,7 +383,7 @@ if __name__ == '__main__':
         help="Port on which to serve.")
     parser.add_argument(
         "--config", type=str,
-        help="Specific config file to use.")
+        help="Absolute path to a config YAML file.")
     parser.add_argument(
         "--noauth",
         action='store_true', help="Disable authentication, for testing.")
@@ -382,10 +395,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     app.config['noauth'] = args.noauth
     if args.config:
-        cfg_file = os.path.join(os.path.dirname(__file__), args.config)
+        cfg_file = os.path.join(args.config)
         with open(cfg_file) as fp:
             cfg = yaml.load(fp)
-
-        app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
+            configure(cfg)
 
     app.run(debug=args.debug, host=args.host, port=args.port)

@@ -2,26 +2,15 @@ import pytest
 
 from io import BytesIO
 import json
-import os
 import requests.status_codes
 
 import pybackend.urilib as urilib
 import pybackend.utils as utils
 
 
-@pytest.fixture
-def app():
-    import main
-    config = os.path.join(os.path.dirname(__file__), os.pardir,
-                          'local_config.json')
-    main.app.config['cloud'] = json.load(open(config, 'r'))
-    main.app.testing = True
-    return main.app.test_client()
-
-
-def test_audio_upload(app):
+def test_audio_upload(sample_app):
     data = dict(audio=(BytesIO(b'my file contents'), 'blah.wav'))
-    r = app.post('/api/v0.1/audio', data=data)
+    r = sample_app.post('/api/v0.1/audio', data=data)
     assert r.status_code == requests.status_codes.codes.OK
     data = json.loads(r.data.decode('utf-8'))
     assert data['uri']
@@ -29,55 +18,55 @@ def test_audio_upload(app):
     assert kind == 'audio'
 
 
-def test_audio_upload_method_not_allowed(app):
-    r = app.get('/api/v0.1/audio')
+def test_audio_upload_method_not_allowed(sample_app):
+    r = sample_app.get('/api/v0.1/audio')
     assert r.status_code == requests.status_codes.codes.METHOD_NOT_ALLOWED
 
 
-def test_audio_upload_bad_filetype(app):
+def test_audio_upload_bad_filetype(sample_app):
     data = dict(audio=(BytesIO(b'new file contents'), 'blah.exe'))
-    r = app.post('/api/v0.1/audio', data=data)
+    r = sample_app.post('/api/v0.1/audio', data=data)
     assert r.status_code == requests.status_codes.codes.BAD_REQUEST
 
 
-def test_audio_get(app):
+def test_audio_get(sample_app):
     # First we'll generate data...
     content = b'my new file contents'
     data = dict(audio=(BytesIO(content), 'blah.wav'))
-    r = app.post('/api/v0.1/audio', data=data)
+    r = sample_app.post('/api/v0.1/audio', data=data)
     assert r.status_code == requests.status_codes.codes.OK
     uri = json.loads(r.data.decode('utf-8'))['uri']
     kind, gid = urilib.split(uri)
     # Now let's go looking for it
-    r = app.get('/api/v0.1/audio/{}'.format(gid))
+    r = sample_app.get('/api/v0.1/audio/{}'.format(gid))
     assert r.status_code == requests.status_codes.codes.OK
     assert r.data == content
 
 
-def test_audio_get_no_resource(app):
-    r = app.get('/api/v0.1/audio/{}'.format("definitelydoesntexist"))
+def test_audio_get_no_resource(sample_app):
+    r = sample_app.get('/api/v0.1/audio/{}'.format("definitelydoesntexist"))
     assert r.status_code == requests.status_codes.codes.NOT_FOUND
 
 
-def test_audio_post_fails(app):
+def test_audio_post_fails(sample_app):
     data = dict(audio=(BytesIO(b'my new file contents'), 'blah.wav'))
-    r = app.post('/api/v0.1/audio/{}'.format("abc"), data=data)
+    r = sample_app.post('/api/v0.1/audio/{}'.format("abc"), data=data)
     assert r.status_code == requests.status_codes.codes.METHOD_NOT_ALLOWED
 
 
-def test_annotation_submit(app):
-    r = app.post('/api/v0.1/annotation/submit',
-                 data=json.dumps(dict(foo='bar')),
-                 content_type='application/json')
+def test_annotation_submit(sample_app):
+    r = sample_app.post('/api/v0.1/annotation/submit',
+                        data=json.dumps(dict(foo='bar')),
+                        content_type='application/json')
     assert r.status_code == requests.status_codes.codes.OK
 
 
 @pytest.mark.skipif(not utils.check_connection(), reason='No internet')
-def test_annotation_taxonomy(app):
-    r = app.get('/api/v0.1/annotation/taxonomy')
+def test_annotation_taxonomy(sample_app):
+    r = sample_app.get('/api/v0.1/annotation/taxonomy')
     assert r.status_code == requests.status_codes.codes.OK
 
 
-def test_task_get(app):
-    r = app.get('/api/v0.1/task')
+def test_task_get(sample_app):
+    r = sample_app.get('/api/v0.1/task')
     assert r.status_code == requests.status_codes.codes.OK

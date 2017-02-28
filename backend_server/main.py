@@ -28,37 +28,133 @@ import logging
 import mimetypes
 import os
 import random
-
 import requests
+import yaml
+
 from flask import Flask, Response, request, send_file
+from flask import session, redirect, url_for, jsonify
 from flask_cors import CORS
 
-import pybackend.database
-import pybackend.models
-import pybackend.storage
-import pybackend.urilib
-import pybackend.utils
+from functools import wraps
 
+import pybackend
+
+# Python 2.7 doesn't ship with `.json`?
+mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 
-# TODO: One of the following
-#  - Whitelist localhost and `SOURCE` below.
-#  - Use AppEngine for delivery of the annotator HTML.
-CORS(app)
-
 # Set the cloud backend
-CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), '.config.json')
-app.config['cloud'] = json.load(open(CLOUD_CONFIG))
+CONFIG = os.path.join(os.path.dirname(__file__), '.config.yaml')
+with open(CONFIG) as fp:
+    cfg = yaml.load(fp)
+
+app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
+app.secret_key = 'development'
 
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
 
-# Python 2.7 doesn't ship with `.json`?
-mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
+# TODO: One of the following
+#  - Whitelist localhost and `SOURCE` below.
+#  - Use AppEngine for delivery of the annotator HTML?
+CORS(app)
+OAUTH = pybackend.oauth.OAuth(app, session)
+
+
+def authenticate(f):
+    """Decorate a route as requiring authentication."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        app.logger.info(session)
+        if any([app.config.get('noauth', False),
+                session.get(pybackend.oauth.TOKEN, None)]):
+            return f(*args, **kwargs)
+        else:
+            return redirect(url_for('login', _external=True))
+
+    return decorated
+
+
+@app.route('/login')
+@app.route('/login/<app_name>')
+def login(app_name='spotify'):
+    """Start the OAuth login process.
+
+    Query Parameters
+    ----------------
+    complete : {yes, no}, default=yes
+        Direct the OAuth login process to complete; must be 'no' in order to
+        allow commandline interfaces to successfully authenticate.
+    """
+    app_name = app_name.lower()
+    callback = url_for('authorized', app_name=app_name, _external=True)
+    query = ""
+    if request.args.get('complete', 'yes') == 'no':
+        query += "?complete=no"
+    return OAUTH.get(app_name).client.authorize(callback + query)
+
+
+@app.route('/login/authorized/<app_name>')
+def authorized(app_name='spotify'):
+    """Finish the OAuth login process.
+
+    This is the callback endpoint registered with different OAuth handlers. For
+    commandline interfaces, which require manual intervention, the complete=no
+    parameter must be passed through the login redirect route.
+
+    TODO: Update this to a more appropriate response once the annotator is
+    updated.
+
+    Query Parameters
+    ----------------
+    complete : {yes, no}, default=yes
+        Direct the OAuth login process to complete; must be 'no' in order to
+        allow commandline interfaces to successfully authenticate.
+    """
+    app.logger.info("{}".format(request))
+    app_name = app_name.lower()
+    if request.args.get('complete', 'yes') == 'yes':
+        oauthor = OAUTH.get(app_name)
+        resp = oauthor.client.authorized_response()
+        app.logger.info(resp)
+        if resp is None:
+            return ('Access denied: reason={error_reason} '
+                    'error={error_description}'.format(**request.args))
+
+        session[pybackend.oauth.TOKEN] = (resp['access_token'], app_name)
+        return "Successfully logged in."
+    else:
+        return ("To complete log-in, proceed to this URL: {}"
+                .format(request.url))
+
+
+@app.route('/logout')
+def logout():
+    """Log the user out of the current session.
+
+    TODO: Update this to a more appropriate response once the annotator is
+    updated.
+    """
+    token = session.pop(pybackend.oauth.TOKEN, None)
+    return "Success!" if token else "Not currently logged in."
+
+
+@app.route("/me")
+@authenticate
+def me():
+    """Demonstrate that the user has been successfully logged in."""
+    token = session.get(pybackend.oauth.TOKEN)
+    app.logger.debug(str(token))
+    if not token:
+        return "No user logged in."
+
+    oauthor = OAUTH.get(token[1])
+    return jsonify(oauthor.user)
 
 
 @app.route('/api/v0.1/audio', methods=['POST'])
+@authenticate
 def audio_upload():
     """
     To POST files to this endpoint:
@@ -112,11 +208,13 @@ def audio_upload():
 
 
 @app.route('/api/v0.1/audio/<gid>', methods=['GET'])
+@authenticate
 def audio_download(gid):
     """
     To GET responses from this endpoint:
 
-    $ curl -XGET localhost:8080/api/v0.1/audio/bbdde322-c604-4753-b828-9fe8addf17b9
+    $ curl -XGET localhost:8080/api/v0.1/audio/\
+        bbdde322-c604-4753-b828-9fe8addf17b9
     """
     dbase = pybackend.database.Database(
         project=app.config['cloud']['project'],
@@ -151,6 +249,7 @@ def audio_download(gid):
 
 
 @app.route('/api/v0.1/annotation/submit', methods=['POST'])
+@authenticate
 def annotation_submit():
     """
     To POST data to this endpoint:
@@ -218,6 +317,7 @@ def annotation_taxonomy():
 
 
 @app.route('/api/v0.1/task', methods=['GET'])
+@authenticate
 def next_task():
     """
     To fetch data at this endpoint:
@@ -262,17 +362,23 @@ if __name__ == '__main__':
         "--port", type=int, default=8080,
         help="Port on which to serve.")
     parser.add_argument(
-        "--local",
-        action='store_true', help="Use local backend services.")
+        "--config", type=str,
+        help="Specific config file to use.")
+    parser.add_argument(
+        "--noauth",
+        action='store_true', help="Disable authentication, for testing.")
     parser.add_argument(
         "--debug",
         action='store_true',
         help="Run the Flask application in debug mode.")
 
     args = parser.parse_args()
+    app.config['noauth'] = args.noauth
+    if args.config:
+        cfg_file = os.path.join(os.path.dirname(__file__), args.config)
+        with open(cfg_file) as fp:
+            cfg = yaml.load(fp)
 
-    if args.local:
-        config = os.path.join(os.path.dirname(__file__), 'local_config.json')
-        app.config['cloud'] = json.load(open(config))
+        app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
 
     app.run(debug=args.debug, port=args.port)

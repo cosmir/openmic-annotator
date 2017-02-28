@@ -33,7 +33,6 @@ import yaml
 
 from flask import Flask, Response, request, send_file
 from flask import session, redirect, url_for, jsonify, render_template
-from flask_cors import CORS
 
 from functools import wraps
 
@@ -58,11 +57,6 @@ app.secret_key = 'development'
 
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
-
-# TODO: One of the following
-#  - Whitelist localhost and `SOURCE` below.
-#  - Use AppEngine for delivery of the annotator HTML?
-CORS(app)
 OAUTH = pybackend.oauth.OAuth(app, session)
 
 

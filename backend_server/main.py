@@ -20,28 +20,27 @@ Endpoints
   - /annotation/submit : POST
   - /annotation/taxonomy : GET
 """
-
 import argparse
 import datetime
-from flask import Flask, request, Response, session, redirect, url_for, jsonify
-from flask import send_file
-from flask_cors import CORS
-
-from functools import wraps
 import io
 import json
 import logging
 import mimetypes
+import os
 import random
 import requests
-import os
 import yaml
+
+from flask import Flask, Response, request, send_file
+from flask import session, redirect, url_for, jsonify
+from flask_cors import CORS
+
+from functools import wraps
 
 import pybackend
 
 # Python 2.7 doesn't ship with `.json`?
 mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
-
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 
@@ -166,6 +165,8 @@ def audio_upload():
       - Store user data (who uploaded this? IP address?)
       - File metadata
     """
+    app.logger.info("Upload request from {}".format(request.remote_addr))
+
     audio_data = request.files['audio']
     file_ext = os.path.splitext(audio_data.filename)[-1][1:]
     if file_ext not in AUDIO_EXTENSIONS:
@@ -184,21 +185,23 @@ def audio_upload():
     gid = str(pybackend.utils.uuid(bytestring))
     store.put(gid, bytestring)
 
-    # Index in datastore
-    # Keep things like extension, storage platform, mimetype, etc.
+    # Index in the database
     dbase = pybackend.database.Database(
         project=app.config['cloud']['project'],
         **app.config['cloud']['database'])
 
     uri = pybackend.urilib.join('audio', gid)
-    record = dict(gid=gid, file_ext=file_ext,
-                  created=str(datetime.datetime.now()))
-
+    record = dict(file_ext=file_ext,
+                  created=str(datetime.datetime.now()),
+                  remote_addr=request.remote_addr,
+                  num_bytes=len(bytestring),
+                  **request.form)
     dbase.put(uri, record)
-    record.update(
-        uri=uri, message="Received {} bytes of data.".format(len(bytestring)))
+    response_data = dict(
+        uri=uri,
+        message="Received {} bytes of data.".format(len(bytestring)))
 
-    resp = Response(json.dumps(record), status=200,
+    resp = Response(json.dumps(response_data), status=200,
                     mimetype=mimetypes.types_map[".json"])
     resp.headers['Link'] = SOURCE
     return resp
@@ -210,7 +213,8 @@ def audio_download(gid):
     """
     To GET responses from this endpoint:
 
-    $ curl -XGET localhost:8080/audio/bbdde322-c604-4753-b828-9fe8addf17b9
+    $ curl -XGET localhost:8080/api/v0.1/audio/\
+        bbdde322-c604-4753-b828-9fe8addf17b9
     """
     dbase = pybackend.database.Database(
         project=app.config['cloud']['project'],
@@ -231,10 +235,10 @@ def audio_download(gid):
             project=app.config['cloud']['project'],
             **app.config['cloud']['storage'])
 
-        data = store.get(entity['gid'])
+        data = store.get(gid)
         app.logger.debug("Returning {} bytes".format(len(data)))
 
-        filename = os.path.extsep.join([entity['gid'], entity['file_ext']])
+        filename = os.path.extsep.join([gid, entity['file_ext']])
         resp = send_file(
             io.BytesIO(data),
             attachment_filename=filename,
@@ -251,7 +255,7 @@ def annotation_submit():
     To POST data to this endpoint:
 
     $ curl -H "Content-type: application/json" \
-        -X POST localhost:8080/annotation/submit \
+        -X POST localhost:8080/api/v0.1/annotation/submit \
         -d '{"message":"Hello Data"}'
     """
     if request.headers['Content-Type'] == 'application/json':
@@ -302,7 +306,7 @@ def annotation_taxonomy():
     """
     To fetch data at this endpoint:
 
-    $ curl -X GET localhost:8080/annotation/taxonomy
+    $ curl -X GET localhost:8080/api/v0.1/annotation/taxonomy
     """
     instruments = get_taxonomy()
     status = 200 if instruments else 400
@@ -318,7 +322,7 @@ def next_task():
     """
     To fetch data at this endpoint:
 
-    $ curl -X GET localhost:8080/task
+    $ curl -X GET localhost:8080/api/v0.1/task
     """
     db = pybackend.database.Database(
         project=app.config['cloud']['project'],
@@ -352,7 +356,8 @@ def server_error(e):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
         "--port", type=int, default=8080,
         help="Port on which to serve.")

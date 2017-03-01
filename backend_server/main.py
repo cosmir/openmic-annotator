@@ -32,8 +32,7 @@ import requests
 import yaml
 
 from flask import Flask, Response, request, send_file
-from flask import session, redirect, url_for, jsonify
-from flask_cors import CORS
+from flask import session, redirect, url_for, jsonify, render_template
 
 from functools import wraps
 
@@ -42,24 +41,36 @@ import pybackend
 # Python 2.7 doesn't ship with `.json`?
 mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 logging.basicConfig(level=logging.DEBUG)
+
 app = Flask(__name__)
-
-# Set the cloud backend
-CONFIG = os.path.join(os.path.dirname(__file__), '.config.yaml')
-with open(CONFIG) as fp:
-    cfg = yaml.load(fp)
-
-app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
 app.secret_key = 'development'
 
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
+OAUTH = None
 
-# TODO: One of the following
-#  - Whitelist localhost and `SOURCE` below.
-#  - Use AppEngine for delivery of the annotator HTML?
-CORS(app)
-OAUTH = pybackend.oauth.OAuth(app, session)
+
+def configure(cfg):
+    """Configure the (singleton) application object.
+
+    TODO: Should yell if `cfg` is malformed.
+
+    Parameters
+    ----------
+    cfg : dict
+        Object containing configuration info.
+    """
+    app.static_folder = cfg['annotator']['static_folder']
+    app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
+    global OAUTH
+    OAUTH = pybackend.oauth.OAuth(app, session)
+
+
+# Default configuration
+CONFIG = os.path.join(os.path.dirname(__file__), '.config.yaml')
+with open(CONFIG) as fp:
+    cfg = yaml.load(fp)
+    configure(cfg)
 
 
 def authenticate(f):
@@ -123,7 +134,7 @@ def authorized(app_name='spotify'):
                     'error={error_description}'.format(**request.args))
 
         session[pybackend.oauth.TOKEN] = (resp['access_token'], app_name)
-        return "Successfully logged in."
+        return redirect(url_for('index'))
     else:
         return ("To complete log-in, proceed to this URL: {}"
                 .format(request.url))
@@ -138,6 +149,13 @@ def logout():
     """
     token = session.pop(pybackend.oauth.TOKEN, None)
     return "Success!" if token else "Not currently logged in."
+
+
+@app.route("/")
+@authenticate
+def index():
+    """Main entry point for the annotation application."""
+    return render_template("index.html")
 
 
 @app.route("/me")
@@ -329,9 +347,8 @@ def next_task():
         **app.config['cloud']['database'])
 
     random_uri = random.choice(list(db.uris(kind='audio')))
-    audio_url = "{scheme}://{netloc}/api/v0.1/audio/{gid}".format(
-        gid=pybackend.urilib.split(random_uri)[1],
-        **app.config['cloud']['annotator'])
+    audio_url = "api/v0.1/audio/{gid}".format(
+        gid=pybackend.urilib.split(random_uri)[1])
 
     task = dict(feedback="none",
                 visualization=random.choice(['waveform', 'spectrogram']),
@@ -359,11 +376,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
+        '--host', type=str, default='localhost',
+        help='Host address for deployment -- 0.0.0.0 for live')
+    parser.add_argument(
         "--port", type=int, default=8080,
         help="Port on which to serve.")
     parser.add_argument(
         "--config", type=str,
-        help="Specific config file to use.")
+        help="Absolute path to a config YAML file.")
     parser.add_argument(
         "--noauth",
         action='store_true', help="Disable authentication, for testing.")
@@ -375,10 +395,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     app.config['noauth'] = args.noauth
     if args.config:
-        cfg_file = os.path.join(os.path.dirname(__file__), args.config)
+        cfg_file = os.path.join(args.config)
         with open(cfg_file) as fp:
             cfg = yaml.load(fp)
+            configure(cfg)
 
-        app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
-
-    app.run(debug=args.debug, port=args.port)
+    app.run(debug=args.debug, host=args.host, port=args.port)

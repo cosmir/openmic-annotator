@@ -13,8 +13,12 @@ sed "s/<YOUR_PROJECT_ID>/$1/" configs/gcloud.DEFAULT.yaml > .config.yaml
 py.test tests
 echo "All tests pass -- deploying"
 
+# Install dependencies
 LIBDIR=lib
 rm -rf $LIBDIR
 pip install . -t $LIBDIR
+
+# Copy static content
+cp -rf ../audio-annotator/static ./
 
 gcloud app deploy

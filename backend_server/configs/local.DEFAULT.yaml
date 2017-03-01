@@ -8,9 +8,6 @@ cloud:
         backend: "local"
         filepath: "tmp/database-file.json"
         mode: "a"
-    annotator:
-        scheme: "http"
-        netloc: "localhost:8080"
 oauth:
     google:
         client_id: "abc"
@@ -18,3 +15,5 @@ oauth:
     spotify:
         client_id: "abc"
         client_secret: "xyz"
+annotator:
+    static_folder: "../audio-annotator/static"

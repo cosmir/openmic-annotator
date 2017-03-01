@@ -20,46 +20,154 @@ Endpoints
   - /annotation/submit : POST
   - /annotation/taxonomy : GET
 """
-
 import argparse
 import datetime
-from flask import Flask, request, Response, jsonify
-from flask import send_file
-from flask_cors import CORS
 import io
 import json
 import logging
 import mimetypes
-import random
-import requests
 import os
-import tempfile
+import requests
+import yaml
 
-import pybackend.database
-import pybackend.models
-import pybackend.storage
-import pybackend.urilib
-import pybackend.utils
+from flask import Flask, Response, request, send_file
+from flask import session, redirect, url_for, jsonify, render_template
+from functools import wraps
 
+import pybackend
 
+# Python 2.7 doesn't ship with `.json`?
+mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
 logging.basicConfig(level=logging.DEBUG)
+
 app = Flask(__name__)
-
-# TODO: One of the following
-#  - Whitelist localhost and `SOURCE` below.
-#  - Use AppEngine for delivery of the annotator HTML.
-CORS(app)
-
-# Set the cloud backend
-CLOUD_CONFIG = os.path.join(os.path.dirname(__file__), '.config.json')
-app.config['cloud'] = json.load(open(CLOUD_CONFIG))
+app.secret_key = 'development'
 
 SOURCE = "https://cosmir.github.io/open-mic/"
 AUDIO_EXTENSIONS = set(['wav', 'ogg', 'mp3', 'au', 'aiff'])
 MAX_SUBMISSION_ATTEMPTS = 5
+OAUTH = None
 
-# Python 2.7 doesn't ship with `.json`?
-mimetypes.add_type(mimetypes.guess_type("x.json")[0], '.json')
+
+def configure(cfg):
+    """Configure the (singleton) application object.
+
+    TODO: Should yell if `cfg` is malformed.
+
+    Parameters
+    ----------
+    cfg : dict
+        Object containing configuration info.
+    """
+    app.static_folder = cfg['annotator']['static_folder']
+    app.config.update(cloud=cfg['cloud'], oauth=cfg['oauth'])
+    global OAUTH
+    OAUTH = pybackend.oauth.OAuth(app, session)
+
+
+# Default configuration
+CONFIG = os.path.join(os.path.dirname(__file__), '.config.yaml')
+with open(CONFIG) as fp:
+    cfg = yaml.load(fp)
+    configure(cfg)
+
+
+def authenticate(f):
+    """Decorate a route as requiring authentication."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        app.logger.info(session)
+        if any([app.config.get('noauth', False),
+                session.get(pybackend.oauth.TOKEN, None)]):
+            return f(*args, **kwargs)
+        else:
+            return redirect(url_for('login', _external=True))
+
+    return decorated
+
+
+@app.route('/login')
+@app.route('/login/<app_name>')
+def login(app_name='spotify'):
+    """Start the OAuth login process.
+
+    Query Parameters
+    ----------------
+    complete : {yes, no}, default=yes
+        Direct the OAuth login process to complete; must be 'no' in order to
+        allow commandline interfaces to successfully authenticate.
+    """
+    app_name = app_name.lower()
+    callback = url_for('authorized', app_name=app_name, _external=True)
+    query = ""
+    if request.args.get('complete', 'yes') == 'no':
+        query += "?complete=no"
+    return OAUTH.get(app_name).client.authorize(callback + query)
+
+
+@app.route('/login/authorized/<app_name>')
+def authorized(app_name='spotify'):
+    """Finish the OAuth login process.
+
+    This is the callback endpoint registered with different OAuth handlers. For
+    commandline interfaces, which require manual intervention, the complete=no
+    parameter must be passed through the login redirect route.
+
+    TODO: Update this to a more appropriate response once the annotator is
+    updated.
+
+    Query Parameters
+    ----------------
+    complete : {yes, no}, default=yes
+        Direct the OAuth login process to complete; must be 'no' in order to
+        allow commandline interfaces to successfully authenticate.
+    """
+    app.logger.info("{}".format(request))
+    app_name = app_name.lower()
+    if request.args.get('complete', 'yes') == 'yes':
+        oauthor = OAUTH.get(app_name)
+        resp = oauthor.client.authorized_response()
+        app.logger.info(resp)
+        if resp is None:
+            return ('Access denied: reason={error_reason} '
+                    'error={error_description}'.format(**request.args))
+
+        session[pybackend.oauth.TOKEN] = (resp['access_token'], app_name)
+        return redirect(url_for('index'))
+    else:
+        return ("To complete log-in, proceed to this URL: {}"
+                .format(request.url))
+
+
+@app.route('/logout')
+def logout():
+    """Log the user out of the current session.
+
+    TODO: Update this to a more appropriate response once the annotator is
+    updated.
+    """
+    token = session.pop(pybackend.oauth.TOKEN, None)
+    return "Success!" if token else "Not currently logged in."
+
+
+@app.route("/")
+@authenticate
+def index():
+    """Main entry point for the annotation application."""
+    return render_template("index.html")
+
+
+@app.route("/me")
+@authenticate
+def me():
+    """Demonstrate that the user has been successfully logged in."""
+    token = session.get(pybackend.oauth.TOKEN)
+    app.logger.debug(str(token))
+    if not token:
+        return "No user logged in."
+
+    oauthor = OAUTH.get(token[1])
+    return jsonify(oauthor.user)
 
 
 def store_raw_audio(db, store, audio, source=None):
@@ -148,17 +256,19 @@ def fetch_audio_data(db, store, gid):
 
 
 @app.route('/api/v0.1/audio', methods=['POST'])
+@authenticate
 def audio_upload():
     """Endpoint for uploading source audio content.
 
     To POST files to this endpoint:
 
-        $ curl -F "audio=@some_file.mp3" localhost:8080/api/v0.1/audio
+    $ curl -F "audio=@some_file.mp3" localhost:8080/api/v0.1/audio
 
     TODOs:
       - Store user data (who uploaded this? IP address?)
       - File metadata
     """
+    app.logger.info("Upload request from {}".format(request.remote_addr))
     audio = request.files['audio']
     store = pybackend.storage.Storage(
         project=app.config['cloud']['project'],
@@ -181,6 +291,7 @@ def audio_upload():
 
 
 @app.route('/api/v0.1/audio/<gid>', methods=['GET'])
+@authenticate
 def audio_download(gid):
     """
     To GET responses from this endpoint:
@@ -214,6 +325,7 @@ def audio_download(gid):
 
 
 @app.route('/api/v0.1/annotation', methods=['POST'])
+@authenticate
 def annotation_submit():
     """
     To POST data to this endpoint:
@@ -229,23 +341,28 @@ def annotation_submit():
                     .format(json.dumps(request.json, indent=2)))
 
     user_id = session.get('user_id', 'anonymous')
+    request_gid = request.json['request_id']
     # Fetch the request object and validate this submission.
     request_uri = pybackend.urilib.join('request', request_gid)
+
+    db = pybackend.database.Database(
+        project=app.config['cloud']['project'],
+        **app.config['cloud']['database'])
     entity = db.get(request_uri)
     if not entity:
         raise ValueError("Invalid `request_id`.")
 
-    request = pybackend.models.TaskRequest.from_flat(**entity)
-    if request['user_id'] != user_id:
+    task_request = pybackend.models.TaskRequest.from_flat(**entity)
+    if task_request['user_id'] != user_id:
         raise ValueError("You are not authorized to submit data for this "
                          "request_id.")
-    elif request['expires'] < (datetime.datetime.utcnow()):
+    elif task_request['expires'] < (datetime.datetime.utcnow()):
         raise ValueError("The submission period for this task has expired.")
         # TODO: Redirect?
-    elif len(request['attempts']) > MAX_SUBMISSION_ATTEMPTS:
+    elif len(task_request['attempts']) > MAX_SUBMISSION_ATTEMPTS:
         raise ValueError("This request has exceeded its valid number of "
                          "submissions.")
-    elif request['complete']:
+    elif task_request['complete']:
         raise ValueError("An annotation has already been accepted for this "
                          "request.")
     # TODO: Does the task have an answer to compare with?
@@ -256,12 +373,9 @@ def annotation_submit():
     data = json.dumps(dict(message='Success!'))
     status = 200
 
-    db = pybackend.database.Database(
-        project=app.config['cloud']['project'],
-        **app.config['cloud']['database'])
     annot = pybackend.models.AnnotationResponse.template(
         response=request.json,
-        task_uri=task_uri,
+        task_uri=task_request['task_uri'],
         request_uri=request_uri,
         user_id=user_id)
 
@@ -276,11 +390,11 @@ def annotation_submit():
 
 
 @app.route('/api/v0.1/taxonomy/<key>', methods=['GET'])
-def annotation_taxonomy():
+def annotation_taxonomy(key):
     """
     To fetch data at this endpoint:
 
-    $ curl -X GET localhost:8080/taxonomy/instrument_taxonomy_v0
+        $ curl -X GET localhost:8080/taxonomy/instrument_taxonomy_v0
     """
     instruments = pybackend.taxonomy.get(key)
     status = 200 if instruments else 400
@@ -340,6 +454,9 @@ def create_task():
 
     gid = str(pybackend.utils.uuid(json.dumps(task)))
     task_uri = pybackend.urilib.join('task', gid)
+    db = pybackend.database.Database(
+        project=app.config['cloud']['project'],
+        **app.config['cloud']['database'])
     db.put(task_uri, task.flatten())
 
     # TODO: Maybe don't return this? depends on who can create them...
@@ -348,7 +465,7 @@ def create_task():
 
 # TODO: It's not clear that we want this route to be public.
 @app.route('/api/v0.1/task/<gid>', methods=['GET'])
-def get_task():
+def get_task(gid):
     """
     To fetch data at this endpoint:
 
@@ -364,9 +481,8 @@ def get_task():
         raise ValueError("No task exists for the given gid: {}".format(gid))
 
     task = pybackend.models.Task.from_flat(**entity)
-    audio_url = "{scheme}://{netloc}/api/v0.1/audio/{gid}".format(
-        gid=pybackend.urilib.split(task_record['audio_uri'])[1],
-        **app.config['cloud']['annotator'])
+    audio_url = "api/v0.1/audio/{gid}".format(
+        gid=pybackend.urilib.split(task['audio_uri'])[1])
 
     tax = pybackend.taxonomy.get(task['payload'].pop('taxonomy'))
     data = json.dumps(dict(audio_url=audio_url, taxonomy=tax,
@@ -378,11 +494,12 @@ def get_task():
 
 
 @app.route('/api/v0.1/task', methods=['GET'])
+@authenticate
 def request_task():
     """
     To fetch data at this endpoint:
 
-    $ curl -X GET localhost:8080/task
+    $ curl -X GET localhost:8080/api/v0.1/task
     """
     db = pybackend.database.Database(
         project=app.config['cloud']['project'],
@@ -394,12 +511,13 @@ def request_task():
                      sortby=['priority'], order='descending')
     query.filter_keys()
     task_uri = next(query)
-    if not track_uri:
+    if not task_uri:
         raise ValueError("No tasks exists!")
 
     # Build a request object
     # TODO: This *should* be sufficiently unique, but some kind of salt / rng
     #       couldn't hurt.
+    # TODO: current_user?
     task_request = pybackend.models.TaskRequest(
         user_id=session.get('user_id', 'anonymous'),
         task_uri=task_uri, expires=600)
@@ -422,9 +540,8 @@ def request_task():
                          "".format(task_uri))
 
     task = pybackend.models.Task.from_flat(**entity)
-    audio_url = "{scheme}://{netloc}/api/v0.1/audio/{gid}".format(
-        gid=pybackend.urilib.split(task['audio_uri'])[1],
-        **app.config['cloud']['annotator'])
+    audio_url = "api/v0.1/audio/{gid}".format(
+        gid=pybackend.urilib.split(task['audio_uri'])[1])
 
     tax = pybackend.taxonomy.get(task['payload'].pop('taxonomy'))
     data = json.dumps(dict(request_id=request_gid, audio_url=audio_url,
@@ -442,22 +559,31 @@ def server_error(e):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument(
+        '--host', type=str, default='localhost',
+        help='Host address for deployment -- 0.0.0.0 for live')
     parser.add_argument(
         "--port", type=int, default=8080,
         help="Port on which to serve.")
     parser.add_argument(
-        "--local",
-        action='store_true', help="Use local backend services.")
+        "--config", type=str,
+        help="Absolute path to a config YAML file.")
+    parser.add_argument(
+        "--noauth",
+        action='store_true', help="Disable authentication, for testing.")
     parser.add_argument(
         "--debug",
         action='store_true',
         help="Run the Flask application in debug mode.")
 
     args = parser.parse_args()
+    app.config['noauth'] = args.noauth
+    if args.config:
+        cfg_file = os.path.join(args.config)
+        with open(cfg_file) as fp:
+            cfg = yaml.load(fp)
+            configure(cfg)
 
-    if args.local:
-        config = os.path.join(os.path.dirname(__file__), 'local_config.json')
-        app.config['cloud'] = json.load(open(config))
-
-    app.run(debug=args.debug, port=args.port)
+    app.run(debug=args.debug, host=args.host, port=args.port)

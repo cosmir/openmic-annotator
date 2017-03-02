@@ -58,8 +58,9 @@ class Task(BaseRecord):
             payload=dict(
                 feedback=feedback,
                 visualization=visualization,
-                annotationTag=taxonomy,
+                taxonomy=taxonomy,
                 # TODO: maybe remove?
+                annotationTag=[],
                 proximityTag=[],
                 alwaysShowTags=True,
                 tutorialVideoURL='https://cosmir.github.io',

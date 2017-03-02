@@ -132,6 +132,7 @@ def authorized(app_name='spotify'):
             return ('Access denied: reason={error_reason} '
                     'error={error_description}'.format(**request.args))
 
+        app.logger.info("current_user: {}".format(oauthor.user))
         session[pybackend.oauth.TOKEN] = (resp['access_token'], app_name)
         return redirect(url_for('index'))
     else:
@@ -342,7 +343,7 @@ def annotation_submit():
     app.logger.info("Received Annotation:\n{}"
                     .format(json.dumps(request.json, indent=2)))
 
-    user_id = session.get('user_id', 'anonymous')
+    user_id = 'anonymous'
     request_gid = request.json['request_id']
     # Fetch the request object and validate this submission.
     request_uri = pybackend.urilib.join('request', request_gid)
@@ -500,8 +501,9 @@ def request_task():
 
     # Get the URI of the highest priority task
     # TODO: User conditional?
-    query = db.query(filter=('kind', 'task'),
-                     sortby=['priority'], order='descending')
+    # sortby=['priority'], order='descending')
+    query = db.query(filter=('kind', 'task'))
+
     query.filter_keys()
     task_uri = next(query)
     if not task_uri:
@@ -515,6 +517,7 @@ def request_task():
         user_id=session.get('user_id', 'anonymous'),
         task_uri=task_uri, expires=600)
 
+    app.logger.debug("task_request: {}".format(task_request))
     request_gid = str(pybackend.utils.uuid(json.dumps(task_request)))
     request_uri = pybackend.urilib.join('request', request_gid)
 
@@ -535,7 +538,7 @@ def request_task():
     task = pybackend.models.Task.from_flat(**entity)
     audio_url = "api/v0.1/audio/{gid}".format(
         gid=pybackend.urilib.split(task['audio_uri'])[1])
-
+    app.logger.info("retrieved task: {}".format(task))
     tax = pybackend.taxonomy.get(task['payload'].pop('taxonomy'))
     data = json.dumps(dict(request_id=request_gid, audio_url=audio_url,
                            taxonomy=tax, **task['payload']))

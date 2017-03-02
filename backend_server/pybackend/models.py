@@ -73,9 +73,10 @@ class TaskRequest(BaseRecord):
     serialized_keys = ['attempts']
 
     @classmethod
-    def template(cls, user_id, task_uri, expires):
+    def template(cls, user_id, task_uri, expires_in):
         now = datetime.datetime.utcnow()
-        tdelta = datetime.timedelta(seconds=expires)
+        tdelta = datetime.timedelta(seconds=expires_in)
         return cls(user_id=user_id, task_uri=task_uri,
-                   created=str(now), expires=str(now + tdelta),
+                   created=str(now),
+                   expires=int((now + tdelta).strftime("%s")),
                    attempts=[], complete=False)

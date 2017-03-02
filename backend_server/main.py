@@ -132,8 +132,12 @@ def authorized(app_name='spotify'):
             return ('Access denied: reason={error_reason} '
                     'error={error_description}'.format(**request.args))
 
-        app.logger.info("current_user: {}".format(oauthor.user))
+        # TODO: Cannot access `oauthor.uri` until after the session token has
+        #       been set ... :thinkingface:
         session[pybackend.oauth.TOKEN] = (resp['access_token'], app_name)
+        session[pybackend.oauth.TOKEN] = (resp['access_token'], app_name,
+                                          oauthor.uri)
+        app.logger.info("current_user: {}".format(oauthor.user))
         return redirect(url_for('index'))
     else:
         return ("To complete log-in, proceed to this URL: {}"
@@ -343,7 +347,7 @@ def annotation_submit():
     app.logger.info("Received Annotation:\n{}"
                     .format(json.dumps(request.json, indent=2)))
 
-    user_id = 'anonymous'
+    user_id = session.get(pybackend.oauth.TOKEN)[2]
     request_gid = request.json['request_id']
     # Fetch the request object and validate this submission.
     request_uri = pybackend.urilib.join('request', request_gid)
@@ -356,13 +360,19 @@ def annotation_submit():
         raise ValueError("Invalid `request_id`.")
 
     task_request = pybackend.models.TaskRequest.from_flat(**entity)
-    # These should be status responses rather than exceptions.
+    app.logger.info("Retrieved task: {}".format(task_request))
+
+    # TODO: Each failure should be a status response rather than an exception.
+    # TODO: And they should redirect?
     if task_request['user_id'] != user_id:
         raise ValueError("You are not authorized to submit data for this "
                          "request_id.")
-    elif task_request['expires'] < (datetime.datetime.utcnow()):
-        raise ValueError("The submission period for this task has expired.")
-        # TODO: Redirect?
+    # TODO: Do we want expiration dates to be ints or datetime strings?
+    elif task_request['expires'] < int(datetime.datetime.utcnow()
+                                       .strftime("%s")):
+        raise ValueError(
+            "The submission period for this task has expired.")
+    # TODO: How many attempts vs the limit
     elif len(task_request['attempts']) > MAX_SUBMISSION_ATTEMPTS:
         raise ValueError("This request has exceeded its valid number of "
                          "submissions.")
@@ -370,10 +380,15 @@ def annotation_submit():
         raise ValueError("An annotation has already been accepted for this "
                          "request.")
     # TODO: Does the task have an answer to compare with?
+    # TODO: If the response is invalid, log it (in `attempts`) and return
 
     # Alright! The submission has passed all the tests.
-    # Do a thing with the annotation
-    # Return some progress stats?
+    # Update the Request record
+    # TODO: These records should be flattened by default...
+    task_request['complete'] = True
+    db.put(request_uri, task_request.flatten())
+
+    # Store the annotation
     data = json.dumps(dict(message='Success!'))
     status = 200
 
@@ -493,7 +508,8 @@ def get_task(gid):
 @app.route('/api/v0.1/task', methods=['GET'])
 @authenticate
 def request_task():
-    """
+    """Creates a "Request"
+
     To fetch data at this endpoint:
 
     $ curl -X GET localhost:8080/api/v0.1/task
@@ -502,9 +518,10 @@ def request_task():
         project=app.config['cloud']['project'],
         **app.config['cloud']['database'])
 
-    # Get the URI of the highest priority task
-    # TODO: User conditional?
-    # sortby=['priority'], order='descending')
+    # TODO: Improve task selection logic
+    #   - User conditional
+    #   - Get the URI of the highest priority task, i.e.
+    #         sortby=['priority'], order='descending'
     query = db.query(filter=('kind', 'task'))
 
     query.filter_keys()
@@ -515,10 +532,9 @@ def request_task():
     # Build a request object
     # TODO: This *should* be sufficiently unique, but some kind of salt / rng
     #       couldn't hurt.
-    # TODO: current_user?
-    task_request = pybackend.models.TaskRequest(
-        user_id=session.get('user_id', 'anonymous'),
-        task_uri=task_uri, expires=600)
+    task_request = pybackend.models.TaskRequest.template(
+        user_id=session.get(pybackend.oauth.TOKEN)[2],
+        task_uri=task_uri, expires_in=600)
 
     app.logger.debug("task_request: {}".format(task_request))
     request_gid = str(pybackend.utils.uuid(json.dumps(task_request)))

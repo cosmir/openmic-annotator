@@ -108,9 +108,17 @@ def run(port):
     fnames = ["267508__mickleness__3nf.ogg",
               "345515__furbyguy__strings-piano.ogg"]
     for fn in fnames:
+        # Upload audio
         fpath = os.path.abspath(os.path.join('data', 'audio', fn))
-        requests.post('http://localhost:{}/api/v0.1/audio'.format(port),
-                      files=dict(audio=open(fpath, 'rb')))
+        resp = requests.post('http://localhost:{}/api/v0.1/audio'.format(port),
+                             files=dict(audio=open(fpath, 'rb')))
+
+        # Build a task over it
+        requests.post(
+            'http://localhost:{}/api/v0.1/task'.format(port),
+            json=dict(uri=resp.json()['uri'],
+                      taxonomy='instrument_taxonomy_v0',
+                      feedback='none', visualization='waveform'))
     kill(server)
 
     # Run the two servers

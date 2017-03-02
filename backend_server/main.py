@@ -212,6 +212,8 @@ def store_raw_audio(db, store, audio, source=None):
     # Index in datastore
     uri = pybackend.urilib.join('audio', gid)
     record = dict(file_ext=file_ext, created=str(datetime.datetime.utcnow()))
+
+    # TODO: Discuss how we want to handle 'sourced' relationships.
     if source:
         record['source'] = source
 
@@ -406,20 +408,17 @@ def annotation_taxonomy(key):
 
 @app.route('/api/v0.1/task', methods=['POST'])
 def create_task():
-    """
+    """Create an annotation 'task' from given metadata.
+
+    TODO: Unclear what the relationship between uploading, trimming, and task
+    creation should be here.
 
     Body Data
     ---------
-    parent : str
-        URI of the parent to build an observation task over.
+    uri : str
+        URI of the object over which to build a task.
 
-    time : number > 0
-        Start time of the observation task.
-
-    duration : number > 0
-        Duration of the observation task.
-
-    taxonomy : str
+    taxonomy : str, default='instrument_taxonomy_v0'
         A taxonomy key; see `pybackend.taxonomy.get` for more info.
 
     feedback : str, default='none'
@@ -432,33 +431,27 @@ def create_task():
         A URI for the generated task.
     """
     app.logger.info("json: {}".format(request.json))
-    track_uri = request.json['parent']
 
-    source = dict(uri=track_uri,
-                  time=request.json['time'],
-                  duration=request.json['duration']),
+    db = pybackend.database.Database(
+        project=app.config['cloud']['project'],
+        **app.config['cloud']['database'])
+    uri = request.json.get("uri", None)
+    if not uri:
+        raise ValueError(
+            "'audio_uri' must be specified if no audio is uploaded.")
 
-    if request.files['audio']:
-        record = store_raw_audio(app, request.files['audio'], source)
-    else:
-        # TODO: Trim the source audio
-        raise NotImplementedError(
-            "Unclear how to trim OGG files in AppEngine; "
-            "maybe we don't have to?")
-
+    # `source` should track provenance information (from whence it came).
+    source = dict()
     task = pybackend.models.Task.template(
-        audio_uri=record['uri'], source=source,
-        taxonomy=request.json['taxonomy'],
+        audio_uri=uri, source=source,
+        taxonomy=request.json.get('taxonomy', 'instrument_taxonomy_v0'),
         feedback=request.json.get('feedback', 'none'),
         visualization=request.json.get('visualization', 'waveform'))
 
     gid = str(pybackend.utils.uuid(json.dumps(task)))
     task_uri = pybackend.urilib.join('task', gid)
-    db = pybackend.database.Database(
-        project=app.config['cloud']['project'],
-        **app.config['cloud']['database'])
-    db.put(task_uri, task.flatten())
 
+    db.put(task_uri, task.flatten())
     # TODO: Maybe don't return this? depends on who can create them...
     return jsonify(dict(uri=task_uri))
 

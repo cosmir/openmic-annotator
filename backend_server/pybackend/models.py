@@ -60,7 +60,6 @@ class Task(BaseRecord):
                 visualization=visualization,
                 taxonomy=taxonomy,
                 # TODO: maybe remove?
-                annotationTag=[],
                 proximityTag=[],
                 alwaysShowTags=True,
                 tutorialVideoURL='https://cosmir.github.io',

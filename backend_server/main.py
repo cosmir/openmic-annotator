@@ -356,6 +356,7 @@ def annotation_submit():
         raise ValueError("Invalid `request_id`.")
 
     task_request = pybackend.models.TaskRequest.from_flat(**entity)
+    # These should be status responses rather than exceptions.
     if task_request['user_id'] != user_id:
         raise ValueError("You are not authorized to submit data for this "
                          "request_id.")
@@ -399,6 +400,8 @@ def annotation_taxonomy(key):
 
         $ curl -X GET localhost:8080/taxonomy/instrument_taxonomy_v0
     """
+    # Break this out into application state. Should at least cache, but
+    # probably fetch once.
     instruments = pybackend.taxonomy.get(key)
     status = 200 if instruments else 400
 
@@ -457,7 +460,7 @@ def create_task():
     return jsonify(dict(uri=task_uri))
 
 
-# TODO: It's not clear that we want this route to be public.
+# TODO: It's not clear that we want this route to be public. Or at all.
 @app.route('/api/v0.1/task/<gid>', methods=['GET'])
 def get_task(gid):
     """
@@ -540,8 +543,12 @@ def request_task():
         gid=pybackend.urilib.split(task['audio_uri'])[1])
     app.logger.info("retrieved task: {}".format(task))
     tax = pybackend.taxonomy.get(task['payload'].pop('taxonomy'))
-    data = json.dumps(dict(request_id=request_gid, audio_url=audio_url,
-                           taxonomy=tax, **task['payload']))
+    data = json.dumps(
+        dict(request_id=request_gid,
+             task=dict(url=audio_url,
+                       # This `annotationTag` field is pain waiting to happen.
+                       annotationTag=tax,
+                       **task['payload'])))
     app.logger.debug("Returning:\n{}".format(data))
     resp = Response(data)
     resp.headers['Link'] = SOURCE
